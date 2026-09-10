@@ -1,7 +1,5 @@
 {
   "name": "Family Routines",
   "render_readme": true,
-  "homeassistant": "2024.11.0",
-  "zip_release": true,
-  "filename": "family_routines.zip"
+  "homeassistant": "2024.11.0"
 }
