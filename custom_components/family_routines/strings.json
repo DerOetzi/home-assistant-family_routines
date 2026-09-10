@@ -1,0 +1,60 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Family Routines",
+        "description": "Creates the hub. Add people and scan points afterwards via \"+ Add sub-entry\" on this integration."
+      }
+    },
+    "error": {},
+    "abort": {
+      "single_instance_allowed": "Family Routines is already set up."
+    }
+  },
+  "config_subentries": {
+    "person": {
+      "initiate_flow": {
+        "user": "Add person"
+      },
+      "entry_type": "Person",
+      "step": {
+        "user": {
+          "title": "Add person",
+          "description": "Everyone with their own routine gets an entry here.",
+          "data": {
+            "name": "Name",
+            "color": "Colour",
+            "status_card_uid": "Status card UID"
+          },
+          "data_description": {
+            "color": "Hex value such as #E85D9C. Used for the ring on the display and everywhere this person appears.",
+            "status_card_uid": "Leave empty and teach the card later from the panel."
+          }
+        }
+      }
+    },
+    "station": {
+      "initiate_flow": {
+        "user": "Add scan point"
+      },
+      "entry_type": "Scan point",
+      "step": {
+        "user": {
+          "title": "Add scan point",
+          "description": "A place where cards are scanned. One scan point is enough; add more only if the routine is spread over several rooms.",
+          "data": {
+            "name": "Name",
+            "short_name": "Short name",
+            "signpost_icon": "Signpost icon",
+            "device_name": "Device name"
+          },
+          "data_description": {
+            "short_name": "One word, shown on other displays when a task waits here.",
+            "signpost_icon": "Material Symbols name, for example arrow_downward.",
+            "device_name": "The name the scans arrive under, for example flur-og-vorne-dial."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Family Routines einrichten",
+        "description": "Legt die zentrale Verwaltung an. Personen und Scanpunkte fügst du danach über \"+ Untereintrag hinzufügen\" auf dieser Integration hinzu."
+      }
+    },
+    "error": {},
+    "abort": {
+      "single_instance_allowed": "Family Routines ist bereits eingerichtet."
+    }
+  },
+  "config_subentries": {
+    "person": {
+      "initiate_flow": {
+        "user": "Person hinzufügen"
+      },
+      "entry_type": "Person",
+      "step": {
+        "user": {
+          "title": "Person hinzufügen",
+          "description": "Jeder mit einer eigenen Routine bekommt hier einen Eintrag.",
+          "data": {
+            "name": "Name",
+            "color": "Farbe",
+            "status_card_uid": "UID der Status-Karte"
+          },
+          "data_description": {
+            "color": "Hex-Wert wie #E85D9C. Gilt für den Ring auf dem Display und überall, wo diese Person auftaucht.",
+            "status_card_uid": "Leer lassen und die Karte später im Panel anlernen."
+          }
+        }
+      }
+    },
+    "station": {
+      "initiate_flow": {
+        "user": "Scanpunkt hinzufügen"
+      },
+      "entry_type": "Scanpunkt",
+      "step": {
+        "user": {
+          "title": "Scanpunkt hinzufügen",
+          "description": "Ein Ort, an dem Karten gescannt werden. Einer reicht; weitere nur, wenn sich die Routine über mehrere Räume verteilt.",
+          "data": {
+            "name": "Name",
+            "short_name": "Kurzname",
+            "signpost_icon": "Wegweisersymbol",
+            "device_name": "Gerätename"
+          },
+          "data_description": {
+            "short_name": "Ein Wort, erscheint auf anderen Displays, wenn hier eine Aufgabe wartet.",
+            "signpost_icon": "Name aus Material Symbols, zum Beispiel arrow_downward.",
+            "device_name": "Der Name, unter dem die Scans hereinkommen, zum Beispiel flur-og-vorne-dial."
+          }
+        }
+      }
+    }
+  }
+}

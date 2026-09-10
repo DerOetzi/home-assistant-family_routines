@@ -1,0 +1,13 @@
+{
+  "domain": "family_routines",
+  "name": "Family Routines",
+  "codeowners": ["@DerOetzi"],
+  "config_flow": true,
+  "dependencies": ["http", "frontend", "panel_custom", "websocket_api"],
+  "documentation": "https://github.com/DerOetzi/home-assistant-family_routines",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/DerOetzi/home-assistant-family_routines/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}
