@@ -11,6 +11,11 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .const import (
     CONF_COLOR,
@@ -25,6 +30,15 @@ from .const import (
     SUBENTRY_TYPE_PERSON,
     SUBENTRY_TYPE_STATION,
 )
+from .icons import SIGNPOST_ICONS
+
+SIGNPOST_SELECTOR = SelectSelector(
+    SelectSelectorConfig(
+        options=list(SIGNPOST_ICONS),
+        translation_key="signpost_icon",
+        mode=SelectSelectorMode.DROPDOWN,
+    )
+)
 
 STEP_PERSON_DATA_SCHEMA = vol.Schema(
     {
@@ -38,7 +52,9 @@ STEP_STATION_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME): str,
         vol.Required(CONF_SHORT_NAME): str,
-        vol.Required(CONF_SIGNPOST_ICON, default=DEFAULT_SIGNPOST_ICON): str,
+        vol.Required(
+            CONF_SIGNPOST_ICON, default=DEFAULT_SIGNPOST_ICON
+        ): SIGNPOST_SELECTOR,
         vol.Required(CONF_DEVICE_NAME): str,
     }
 )
@@ -66,7 +82,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
 
-class PersonSubentryFlow(ConfigSubentryFlow):
+class FamilyRoutinesSubentryFlow(ConfigSubentryFlow):
+    schema: vol.Schema
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
@@ -75,20 +93,32 @@ class PersonSubentryFlow(ConfigSubentryFlow):
                 title=user_input[CONF_NAME], data=dict(user_input)
             )
 
-        return self.async_show_form(
-            step_id="user", data_schema=STEP_PERSON_DATA_SCHEMA
-        )
+        return self.async_show_form(step_id="user", data_schema=self.schema)
 
-
-class StationSubentryFlow(ConfigSubentryFlow):
-    async def async_step_user(
+    async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
+        subentry = self._get_reconfigure_subentry()
+
         if user_input is not None:
-            return self.async_create_entry(
-                title=user_input[CONF_NAME], data=dict(user_input)
+            return self.async_update_and_abort(
+                self._get_entry(),
+                subentry,
+                title=user_input[CONF_NAME],
+                data=dict(user_input),
             )
 
         return self.async_show_form(
-            step_id="user", data_schema=STEP_STATION_DATA_SCHEMA
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                self.schema, subentry.data
+            ),
         )
+
+
+class PersonSubentryFlow(FamilyRoutinesSubentryFlow):
+    schema = STEP_PERSON_DATA_SCHEMA
+
+
+class StationSubentryFlow(FamilyRoutinesSubentryFlow):
+    schema = STEP_STATION_DATA_SCHEMA

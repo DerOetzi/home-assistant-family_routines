@@ -30,7 +30,23 @@
             "color": "Hex value such as #E85D9C. Used for the ring on the display and everywhere this person appears.",
             "status_card_uid": "Leave empty and teach the card later from the panel."
           }
+        },
+        "reconfigure": {
+          "title": "Edit person",
+          "description": "Changing the colour updates every display that shows this person.",
+          "data": {
+            "name": "Name",
+            "color": "Colour",
+            "status_card_uid": "Status card UID"
+          },
+          "data_description": {
+            "color": "Hex value such as #E85D9C. Used for the ring on the display and everywhere this person appears.",
+            "status_card_uid": "Leave empty and teach the card later from the panel."
+          }
         }
+      },
+      "abort": {
+        "reconfigure_successful": "Saved."
       }
     },
     "station": {
@@ -50,10 +66,269 @@
           },
           "data_description": {
             "short_name": "One word, shown on other displays when a task waits here.",
-            "signpost_icon": "Material Symbols name, for example arrow_downward.",
+            "signpost_icon": "Shown on other displays as the way to this scan point.",
+            "device_name": "The name the scans arrive under, for example flur-og-vorne-dial."
+          }
+        },
+        "reconfigure": {
+          "title": "Edit scan point",
+          "description": "Changing the device name changes where scans are expected to come from.",
+          "data": {
+            "name": "Name",
+            "short_name": "Short name",
+            "signpost_icon": "Signpost icon",
+            "device_name": "Device name"
+          },
+          "data_description": {
+            "short_name": "One word, shown on other displays when a task waits here.",
+            "signpost_icon": "Shown on other displays as the way to this scan point.",
             "device_name": "The name the scans arrive under, for example flur-og-vorne-dial."
           }
         }
+      },
+      "abort": {
+        "reconfigure_successful": "Saved."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "station": {
+        "name": "Routine"
+      },
+      "progress": {
+        "name": "Progress"
+      }
+    },
+    "event": {
+      "scan": {
+        "name": "Scan",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "card": "Card",
+              "unknown_card": "Unknown card"
+            }
+          }
+        }
+      }
+    },
+    "button": {
+      "reset": {
+        "name": "Reset"
+      }
+    }
+  },
+  "services": {
+    "scan": {
+      "name": "Scan",
+      "description": "Processes a card that was held against a scan point.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "The chip UID the reader returned."
+        },
+        "station": {
+          "name": "Scan point",
+          "description": "Device name, name or short name of the scan point."
+        }
+      }
+    },
+    "learn_card": {
+      "name": "Teach card",
+      "description": "Binds a card to a task or to a person. Without a UID the next unknown scan is taken.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Leave empty to use the next scan, or the last unknown one."
+        },
+        "routine_id": {
+          "name": "Routine",
+          "description": "Required together with a task."
+        },
+        "task_id": {
+          "name": "Task",
+          "description": "Required together with a routine."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "Alone this makes a status card. Together with a task it binds the card to that person only."
+        }
+      }
+    },
+    "complete": {
+      "name": "Complete task",
+      "description": "Ticks a task off or takes it back.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "The routine the task belongs to."
+        },
+        "task_id": {
+          "name": "Task",
+          "description": "The task to change."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "Whose progress changes."
+        },
+        "completed": {
+          "name": "Completed",
+          "description": "Off takes the task back."
+        }
+      }
+    },
+    "select_person": {
+      "name": "Select person",
+      "description": "Sets who is shown at a scan point.",
+      "fields": {
+        "station": {
+          "name": "Scan point",
+          "description": "Device name, name or short name of the scan point."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "Leave empty to step through the people instead."
+        },
+        "direction": {
+          "name": "Direction",
+          "description": "Which way to step when no person is given."
+        }
+      }
+    },
+    "keepalive": {
+      "name": "Keep context alive",
+      "description": "Extends the active person at a scan point without changing anything.",
+      "fields": {
+        "station": {
+          "name": "Scan point",
+          "description": "Device name, name or short name of the scan point."
+        }
+      }
+    },
+    "reset": {
+      "name": "Reset",
+      "description": "Clears the progress of a routine.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "Leave empty to reset every routine."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "Leave empty to reset everyone."
+        }
+      }
+    },
+    "add_routine": {
+      "name": "Add routine",
+      "description": "Creates a routine. Returns its id.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Shown on the routine's device and buttons."
+        },
+        "window_start": {
+          "name": "Window start",
+          "description": "The routine is shown from this time, and its progress is cleared here."
+        },
+        "window_end": {
+          "name": "Window end",
+          "description": "After this time the routine is no longer shown."
+        },
+        "person_ids": {
+          "name": "People",
+          "description": "List of people this routine applies to."
+        },
+        "weekdays": {
+          "name": "Weekdays",
+          "description": "Leave empty to run every day. The day a window starting before midnight belongs to is the day it opened."
+        }
+      }
+    },
+    "remove_routine": {
+      "name": "Remove routine",
+      "description": "Deletes a routine together with its tasks, cards and progress.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "The routine to delete."
+        }
+      }
+    },
+    "add_task": {
+      "name": "Add task",
+      "description": "Appends a task to a routine. Returns its id.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "The routine to append to."
+        },
+        "label": {
+          "name": "Word",
+          "description": "The word shown under the symbol."
+        },
+        "icon": {
+          "name": "Icon name",
+          "description": "Pick from the list, or give a hex codepoint for an icon that is baked into your display font but not listed."
+        },
+        "stations": {
+          "name": "Scan points",
+          "description": "Leave empty to make the task tickable everywhere."
+        },
+        "weekdays": {
+          "name": "Weekdays",
+          "description": "Leave empty to run on every day the routine runs."
+        }
+      }
+    },
+    "remove_task": {
+      "name": "Remove task",
+      "description": "Deletes a task together with its cards and progress.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "The routine the task belongs to."
+        },
+        "task_id": {
+          "name": "Task",
+          "description": "The task to delete."
+        }
+      }
+    },
+    "get_routines": {
+      "name": "Get routines",
+      "description": "Returns people, scan points, routines, tasks and cards with their ids."
+    }
+  },
+  "selector": {
+    "signpost_icon": {
+      "options": {
+        "arrow_upward": "Arrow up",
+        "arrow_downward": "Arrow down",
+        "arrow_forward": "Arrow right",
+        "arrow_back": "Arrow left"
+      }
+    },
+    "task_icon": {
+      "options": {
+        "apparel": "Clothes",
+        "dentistry": "Toothbrush",
+        "self_care": "Hair",
+        "breakfast_dining": "Breakfast",
+        "backpack": "Backpack",
+        "footprint": "Shoes"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
       }
     }
   }

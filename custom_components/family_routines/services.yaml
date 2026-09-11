@@ -1,0 +1,190 @@
+scan:
+  fields:
+    uid:
+      required: true
+      example: "04-a1-b2-c3-d4-e5-f6"
+      selector:
+        text:
+    station:
+      required: true
+      example: flur-og-vorne-dial
+      selector:
+        text:
+
+learn_card:
+  fields:
+    uid:
+      required: false
+      example: "04-a1-b2-c3-d4-e5-f6"
+      selector:
+        text:
+    routine_id:
+      required: false
+      selector:
+        text:
+    task_id:
+      required: false
+      selector:
+        text:
+    person_id:
+      required: false
+      selector:
+        text:
+
+complete:
+  fields:
+    routine_id:
+      required: true
+      selector:
+        text:
+    task_id:
+      required: true
+      selector:
+        text:
+    person_id:
+      required: true
+      selector:
+        text:
+    completed:
+      required: false
+      default: true
+      selector:
+        boolean:
+
+select_person:
+  fields:
+    station:
+      required: true
+      selector:
+        text:
+    person_id:
+      required: false
+      selector:
+        text:
+    direction:
+      required: false
+      default: 1
+      selector:
+        select:
+          options:
+            - "1"
+            - "-1"
+
+keepalive:
+  fields:
+    station:
+      required: true
+      selector:
+        text:
+
+reset:
+  fields:
+    routine_id:
+      required: false
+      selector:
+        text:
+    person_id:
+      required: false
+      selector:
+        text:
+
+add_routine:
+  fields:
+    name:
+      required: true
+      example: Morgen
+      selector:
+        text:
+    window_start:
+      required: false
+      example: "04:00"
+      selector:
+        time:
+    window_end:
+      required: false
+      example: "10:00"
+      selector:
+        time:
+    person_ids:
+      required: false
+      selector:
+        object:
+    weekdays:
+      required: false
+      selector:
+        select:
+          multiple: true
+          translation_key: weekday
+          options:
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
+
+remove_routine:
+  fields:
+    routine_id:
+      required: true
+      selector:
+        text:
+
+add_task:
+  fields:
+    routine_id:
+      required: true
+      selector:
+        text:
+    label:
+      required: true
+      example: Anziehen
+      selector:
+        text:
+    icon:
+      required: true
+      example: apparel
+      selector:
+        select:
+          custom_value: true
+          translation_key: task_icon
+          options:
+            - apparel
+            - dentistry
+            - self_care
+            - breakfast_dining
+            - backpack
+            - footprint
+    stations:
+      required: false
+      selector:
+        object:
+    weekdays:
+      required: false
+      selector:
+        select:
+          multiple: true
+          translation_key: weekday
+          options:
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
+
+remove_task:
+  fields:
+    routine_id:
+      required: true
+      selector:
+        text:
+    task_id:
+      required: true
+      selector:
+        text:
+
+get_routines:
+  fields: {}

@@ -30,7 +30,23 @@
             "color": "Hex-Wert wie #E85D9C. Gilt für den Ring auf dem Display und überall, wo diese Person auftaucht.",
             "status_card_uid": "Leer lassen und die Karte später im Panel anlernen."
           }
+        },
+        "reconfigure": {
+          "title": "Person bearbeiten",
+          "description": "Eine geänderte Farbe wirkt sofort auf jedes Display, das diese Person zeigt.",
+          "data": {
+            "name": "Name",
+            "color": "Farbe",
+            "status_card_uid": "UID der Status-Karte"
+          },
+          "data_description": {
+            "color": "Hex-Wert wie #E85D9C. Gilt für den Ring auf dem Display und überall, wo diese Person auftaucht.",
+            "status_card_uid": "Leer lassen und die Karte später im Panel anlernen."
+          }
         }
+      },
+      "abort": {
+        "reconfigure_successful": "Gespeichert."
       }
     },
     "station": {
@@ -50,10 +66,269 @@
           },
           "data_description": {
             "short_name": "Ein Wort, erscheint auf anderen Displays, wenn hier eine Aufgabe wartet.",
-            "signpost_icon": "Name aus Material Symbols, zum Beispiel arrow_downward.",
+            "signpost_icon": "Erscheint auf anderen Displays als Weg zu diesem Scanpunkt.",
+            "device_name": "Der Name, unter dem die Scans hereinkommen, zum Beispiel flur-og-vorne-dial."
+          }
+        },
+        "reconfigure": {
+          "title": "Scanpunkt bearbeiten",
+          "description": "Ein geänderter Gerätename ändert, unter welchem Namen Scans erwartet werden.",
+          "data": {
+            "name": "Name",
+            "short_name": "Kurzname",
+            "signpost_icon": "Wegweisersymbol",
+            "device_name": "Gerätename"
+          },
+          "data_description": {
+            "short_name": "Ein Wort, erscheint auf anderen Displays, wenn hier eine Aufgabe wartet.",
+            "signpost_icon": "Erscheint auf anderen Displays als Weg zu diesem Scanpunkt.",
             "device_name": "Der Name, unter dem die Scans hereinkommen, zum Beispiel flur-og-vorne-dial."
           }
         }
+      },
+      "abort": {
+        "reconfigure_successful": "Gespeichert."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "station": {
+        "name": "Routine"
+      },
+      "progress": {
+        "name": "Fortschritt"
+      }
+    },
+    "event": {
+      "scan": {
+        "name": "Scan",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "card": "Karte",
+              "unknown_card": "Unbekannte Karte"
+            }
+          }
+        }
+      }
+    },
+    "button": {
+      "reset": {
+        "name": "Zurücksetzen"
+      }
+    }
+  },
+  "services": {
+    "scan": {
+      "name": "Scannen",
+      "description": "Verarbeitet eine Karte, die an einen Scanpunkt gehalten wurde.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Die Chip-UID, die der Leser gemeldet hat."
+        },
+        "station": {
+          "name": "Scanpunkt",
+          "description": "Gerätename, Name oder Kurzname des Scanpunkts."
+        }
+      }
+    },
+    "learn_card": {
+      "name": "Karte anlernen",
+      "description": "Bindet eine Karte an eine Aufgabe oder an eine Person. Ohne UID wird der nächste unbekannte Scan genommen.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Leer lassen, um den nächsten oder den zuletzt unbekannten Scan zu nehmen."
+        },
+        "routine_id": {
+          "name": "Routine",
+          "description": "Zusammen mit einer Aufgabe erforderlich."
+        },
+        "task_id": {
+          "name": "Aufgabe",
+          "description": "Zusammen mit einer Routine erforderlich."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "Allein ergibt das eine Status-Karte. Zusammen mit einer Aufgabe gilt die Karte nur für diese Person."
+        }
+      }
+    },
+    "complete": {
+      "name": "Aufgabe abhaken",
+      "description": "Hakt eine Aufgabe ab oder nimmt sie zurück.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "Die Routine, zu der die Aufgabe gehört."
+        },
+        "task_id": {
+          "name": "Aufgabe",
+          "description": "Die zu ändernde Aufgabe."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "Wessen Fortschritt sich ändert."
+        },
+        "completed": {
+          "name": "Erledigt",
+          "description": "Aus nimmt die Aufgabe zurück."
+        }
+      }
+    },
+    "select_person": {
+      "name": "Person wählen",
+      "description": "Legt fest, wer an einem Scanpunkt gezeigt wird.",
+      "fields": {
+        "station": {
+          "name": "Scanpunkt",
+          "description": "Gerätename, Name oder Kurzname des Scanpunkts."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "Leer lassen, um stattdessen durch die Personen zu blättern."
+        },
+        "direction": {
+          "name": "Richtung",
+          "description": "In welche Richtung geblättert wird, wenn keine Person angegeben ist."
+        }
+      }
+    },
+    "keepalive": {
+      "name": "Kontext verlängern",
+      "description": "Verlängert die aktive Person an einem Scanpunkt, ohne etwas zu ändern.",
+      "fields": {
+        "station": {
+          "name": "Scanpunkt",
+          "description": "Gerätename, Name oder Kurzname des Scanpunkts."
+        }
+      }
+    },
+    "reset": {
+      "name": "Zurücksetzen",
+      "description": "Löscht den Fortschritt einer Routine.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "Leer lassen, um alle Routinen zurückzusetzen."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "Leer lassen, um alle Personen zurückzusetzen."
+        }
+      }
+    },
+    "add_routine": {
+      "name": "Routine anlegen",
+      "description": "Legt eine Routine an und gibt ihre Kennung zurück.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Erscheint am Gerät der Routine und an ihren Schaltflächen."
+        },
+        "window_start": {
+          "name": "Fensteranfang",
+          "description": "Ab dieser Uhrzeit wird die Routine gezeigt, und hier wird ihr Fortschritt gelöscht."
+        },
+        "window_end": {
+          "name": "Fensterende",
+          "description": "Nach dieser Uhrzeit wird die Routine nicht mehr gezeigt."
+        },
+        "person_ids": {
+          "name": "Personen",
+          "description": "Liste der Personen, für die diese Routine gilt."
+        },
+        "weekdays": {
+          "name": "Wochentage",
+          "description": "Leer lassen für jeden Tag. Bei einem Fenster über Mitternacht zählt der Tag, an dem es geöffnet hat."
+        }
+      }
+    },
+    "remove_routine": {
+      "name": "Routine löschen",
+      "description": "Löscht eine Routine samt Aufgaben, Karten und Fortschritt.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "Die zu löschende Routine."
+        }
+      }
+    },
+    "add_task": {
+      "name": "Aufgabe anlegen",
+      "description": "Hängt eine Aufgabe an eine Routine an und gibt ihre Kennung zurück.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "Die Routine, an die angehängt wird."
+        },
+        "label": {
+          "name": "Wort",
+          "description": "Das Wort unter dem Symbol."
+        },
+        "icon": {
+          "name": "Symbolname",
+          "description": "Aus der Liste wählen, oder einen Hex-Codepoint angeben für ein Symbol, das in deinem Display-Font gebacken, hier aber nicht gelistet ist."
+        },
+        "stations": {
+          "name": "Scanpunkte",
+          "description": "Leer lassen, damit die Aufgabe überall abhakbar ist."
+        },
+        "weekdays": {
+          "name": "Wochentage",
+          "description": "Leer lassen für jeden Tag, an dem die Routine läuft."
+        }
+      }
+    },
+    "remove_task": {
+      "name": "Aufgabe löschen",
+      "description": "Löscht eine Aufgabe samt Karten und Fortschritt.",
+      "fields": {
+        "routine_id": {
+          "name": "Routine",
+          "description": "Die Routine, zu der die Aufgabe gehört."
+        },
+        "task_id": {
+          "name": "Aufgabe",
+          "description": "Die zu löschende Aufgabe."
+        }
+      }
+    },
+    "get_routines": {
+      "name": "Routinen auslesen",
+      "description": "Gibt Personen, Scanpunkte, Routinen, Aufgaben und Karten mit ihren Kennungen zurück."
+    }
+  },
+  "selector": {
+    "signpost_icon": {
+      "options": {
+        "arrow_upward": "Pfeil hoch",
+        "arrow_downward": "Pfeil runter",
+        "arrow_forward": "Pfeil rechts",
+        "arrow_back": "Pfeil links"
+      }
+    },
+    "task_icon": {
+      "options": {
+        "apparel": "Kleidung",
+        "dentistry": "Zahnbürste",
+        "self_care": "Haare",
+        "breakfast_dining": "Frühstück",
+        "backpack": "Ranzen",
+        "footprint": "Schuhe"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Montag",
+        "tue": "Dienstag",
+        "wed": "Mittwoch",
+        "thu": "Donnerstag",
+        "fri": "Freitag",
+        "sat": "Samstag",
+        "sun": "Sonntag"
       }
     }
   }

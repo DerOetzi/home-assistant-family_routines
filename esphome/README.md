@@ -18,6 +18,13 @@ integration exists. The globals it renders from are exactly the attributes
 of the scan point sensor, so wiring them up is a matter of adding
 `text_sensor` entries, not of changing the page.
 
+The sensor attributes are `routine`, `person`, `task`, `glyph`, `label`,
+`color`, `dots`, `glyphs`, `labels`, `index`, `done_count` and `total`.
+`glyphs` and `labels` are pipe-separated in the same order as `dots`, which
+is what the page's `nth` helper already expects. Icons arrive as finished
+characters, so every codepoint a routine uses has to be listed in the
+`routine_icons` font below.
+
 ## What the device configuration has to provide
 
 | Substitution | Meaning |

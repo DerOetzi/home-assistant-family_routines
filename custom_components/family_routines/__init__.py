@@ -3,15 +3,21 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from . import services
 from .const import DOMAIN, GLOBAL_DATA_KEY, PLATFORMS
+from .coordinator import FamilyRoutinesCoordinator
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][GLOBAL_DATA_KEY] = {"entry": entry}
+    coordinator = FamilyRoutinesCoordinator(hass, entry)
+    await coordinator.async_load()
 
-    if PLATFORMS:
-        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][GLOBAL_DATA_KEY] = {"entry": entry, "coordinator": coordinator}
+
+    services.async_setup(hass, coordinator)
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
 
@@ -23,11 +29,12 @@ async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    unload_ok = True
-    if PLATFORMS:
-        unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        hass.data[DOMAIN].pop(GLOBAL_DATA_KEY, None)
+        global_data = hass.data[DOMAIN].pop(GLOBAL_DATA_KEY, None)
+        if global_data is not None:
+            global_data["coordinator"].async_shutdown()
+        services.async_unload(hass)
 
     return unload_ok
