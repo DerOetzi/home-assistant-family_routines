@@ -1,0 +1,417 @@
+substitutions:
+  color_anna: "0xE85D9C"
+  color_ben: "0x3FA95E"
+  color_muted: "0x6B6B6B"
+
+globals:
+  - id: rt_state
+    type: std::string
+    restore_value: false
+    initial_value: '"idle"'
+  - id: rt_color
+    type: int
+    restore_value: false
+    initial_value: "0x6B6B6B"
+  - id: rt_dots
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+  - id: rt_glyphs
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+  - id: rt_labels
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+  - id: rt_glyph
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+  - id: rt_label
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+  - id: rt_name
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+  - id: rt_index
+    type: int
+    restore_value: false
+    initial_value: "-1"
+
+  - id: rt_browse
+    type: int
+    restore_value: false
+    initial_value: "-1"
+  - id: rt_demo
+    type: int
+    restore_value: false
+    initial_value: "0"
+
+font:
+  - id: routine_icons
+    file: "gfonts://Material+Symbols+Outlined"
+    size: ${icons_xl}
+    bpp: 4
+    glyphs:
+      - "\U0000E0A6"
+      - "\U0000EF7B"
+      - "\U0000F86D"
+      - "\U0000EA54"
+      - "\U0000F19C"
+      - "\U0000F87D"
+      - "\U0000E5D8"
+      - "\U0000E5DB"
+      - "\U0000E5C8"
+      - "\U0000E5C4"
+      - "\U0000EA65"
+      - "\U0000F008"
+      - "\U0000E9B2"
+      - "\U0000EA73"
+      - "\U0000E63D"
+      - "\U0000F1A2"
+      - "\U0000F1B1"
+      - "\U0000E332"
+      - "\U0000F061"
+      - "\U0000EA41"
+      - "\U0000F1B2"
+      - "\U0000EB44"
+      - "\U0000EA61"
+      - "\U0000E110"
+      - "\U0000EA19"
+      - "\U0000EFF6"
+      - "\U0000E536"
+      - "\U0000E52F"
+      - "\U0000F1AD"
+      - "\U0000EFD6"
+      - "\U0000E80C"
+      - "\U0000EFDF"
+      - "\U0000F0FF"
+      - "\U0000E9A0"
+      - "\U0000F8AA"
+      - "\U0000E91D"
+      - "\U0000EA2F"
+      - "\U0000EB48"
+      - "\U0000E405"
+      - "\U0000F09A"
+      - "\U0000E87E"
+      - "\U0000F0BE"
+      - "\U0000EA23"
+      - "\U0000EA0B"
+      - "\U0000E766"
+
+lvgl:
+  default_font: roboto_md
+  pages:
+    - id: routine_page
+      bg_color: 0x101010
+      text_color: 0xF0F0F0
+      scrollbar_mode: "OFF"
+      radius: 120
+      border_width: 5
+      border_color: 0x6B6B6B
+      pad_all: 0
+      widgets:
+        - label:
+            id: lbl_glyph
+            align: CENTER
+            y: -29
+            text_font: routine_icons
+            text: ""
+        - label:
+            id: lbl_word
+            align: CENTER
+            y: 37
+            width: 170
+            text_font: roboto_lg
+            text_align: CENTER
+            long_mode: WRAP
+            text: ""
+        - label:
+            id: lbl_name
+            align: CENTER
+            y: 66
+            width: 160
+            text_font: roboto_md
+            text_align: CENTER
+            long_mode: DOT
+            text: ""
+        - obj: {id: dot_0, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+        - obj: {id: dot_1, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+        - obj: {id: dot_2, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+        - obj: {id: dot_3, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+        - obj: {id: dot_4, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+        - obj: {id: dot_5, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+        - obj: {id: dot_6, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+        - obj: {id: dot_7, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+        - obj: {id: dot_8, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+        - obj: {id: dot_9, width: 20, height: 20, radius: 10, align: CENTER, pad_all: 0, scrollbar_mode: "OFF", clickable: false}
+
+script:
+  - id: rt_render
+    mode: restart
+    then:
+      - lambda: |-
+          lv_obj_t *dots[10] = {id(dot_0), id(dot_1), id(dot_2), id(dot_3), id(dot_4),
+                                id(dot_5), id(dot_6), id(dot_7), id(dot_8), id(dot_9)};
+
+          auto nth = [](const std::string &s, int n) -> std::string {
+            size_t start = 0;
+            for (int k = 0; k < n; k++) {
+              size_t p = s.find('|', start);
+              if (p == std::string::npos) return std::string();
+              start = p + 1;
+            }
+            size_t e = s.find('|', start);
+            return s.substr(start, e == std::string::npos ? std::string::npos : e - start);
+          };
+
+          const std::string &dots_s = id(rt_dots);
+          const int n = (int) dots_s.length();
+          const int browse = id(rt_browse);
+
+          lv_obj_set_style_border_color(id(routine_page)->obj, lv_color_hex(id(rt_color)), LV_PART_MAIN);
+
+          std::string glyph, word;
+          if (browse >= 0 && browse < n) {
+            glyph = nth(id(rt_glyphs), browse);
+            word  = nth(id(rt_labels), browse);
+          } else {
+            glyph = id(rt_glyph);
+            word  = id(rt_label);
+          }
+          lv_label_set_text(id(lbl_glyph), glyph.c_str());
+          lv_label_set_text(id(lbl_word), word.c_str());
+          lv_label_set_text(id(lbl_name), id(rt_name).c_str());
+          lv_obj_set_style_text_color(id(lbl_name), lv_color_hex(id(rt_color)), LV_PART_MAIN);
+
+          for (int i = 0; i < 10; i++) {
+            lv_obj_t *o = dots[i];
+            if (i >= n) {
+              lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
+              continue;
+            }
+            lv_obj_clear_flag(o, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+
+            const char c = dots_s[i];
+            const bool done   = (c == 'x');
+            const bool here   = (c == 'o');
+            const bool behind = (c == '!');
+            const int size = (done || here || behind) ? 20 : 13;
+
+            lv_obj_set_size(o, size, size);
+            lv_obj_set_style_radius(o, size / 2, LV_PART_MAIN);
+
+            const float a = -1.5707963f + i * 6.2831853f / n;
+            const int r = 97;
+            lv_obj_align(o, LV_ALIGN_CENTER, (int) lroundf(cosf(a) * r), (int) lroundf(sinf(a) * r));
+
+            if (done) {
+              lv_obj_set_style_bg_opa(o, LV_OPA_COVER, LV_PART_MAIN);
+              lv_obj_set_style_bg_color(o, lv_color_hex(id(rt_color)), LV_PART_MAIN);
+              lv_obj_set_style_border_width(o, 0, LV_PART_MAIN);
+            } else {
+              lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, LV_PART_MAIN);
+              lv_obj_set_style_border_width(o, (here || behind) ? 3 : 1, LV_PART_MAIN);
+              lv_obj_set_style_border_color(o,
+                  (here || behind) ? lv_color_hex(id(rt_color)) : lv_color_hex(${color_muted}),
+                  LV_PART_MAIN);
+            }
+
+            if (behind) {
+              lv_obj_set_style_outline_width(o, 2, LV_PART_MAIN);
+              lv_obj_set_style_outline_pad(o, 3, LV_PART_MAIN);
+              lv_obj_set_style_outline_color(o, lv_color_hex(id(rt_color)), LV_PART_MAIN);
+            }
+
+            if (i == browse) {
+              lv_obj_set_style_outline_width(o, 2, LV_PART_MAIN);
+              lv_obj_set_style_outline_pad(o, 2, LV_PART_MAIN);
+              lv_obj_set_style_outline_color(o, lv_color_hex(0xF0F0F0), LV_PART_MAIN);
+            } else if (!behind) {
+              lv_obj_set_style_outline_width(o, 0, LV_PART_MAIN);
+            }
+          }
+
+  - id: rt_browse_step
+    parameters:
+      dir: int
+    then:
+      - lambda: |-
+          const std::string &d = id(rt_dots);
+          const int n = (int) d.length();
+          if (n == 0) return;
+
+          const bool want_done = (dir < 0);
+          int i = (id(rt_browse) >= 0) ? id(rt_browse) : id(rt_index);
+          if (i < 0) i = 0;
+
+          for (int k = 0; k < n; k++) {
+            i = (i + dir + n) % n;
+            const bool is_done = (d[i] == 'x');
+            if (is_done == want_done) {
+              id(rt_browse) = i;
+              id(rt_leave_browse).execute();
+              id(rt_render).execute();
+              return;
+            }
+          }
+          id(rt_bump).execute();
+
+  - id: rt_bump
+    mode: restart
+    then:
+      - rtttl.play: "bump:d=32,o=5,b=160:c"
+
+  - id: rt_leave_browse
+    mode: restart
+    then:
+      - delay: 10s
+      - lambda: "id(rt_browse) = -1;"
+      - script.execute: rt_render
+
+  - id: rt_leave_browse_now
+    then:
+      - script.stop: rt_leave_browse
+      - lambda: "id(rt_browse) = -1;"
+      - script.execute: rt_render
+
+  - id: rt_done_sound
+    mode: restart
+    then:
+      - rtttl.stop:
+      - delay: 80ms
+      - rtttl.play: "geschafft:d=8,o=6,b=160:g,b,d7,4g7,e7,d7,b,4d7,16p,16d7,16e7,16f#7,2g7"
+
+  - id: rt_next_demo
+    then:
+      - lambda: "id(rt_demo) += 1;"
+      - script.execute: rt_load_demo
+
+  - id: rt_touch
+    parameters:
+      tx: int
+      ty: int
+    then:
+      - lambda: |-
+          const int n = (int) id(rt_dots).length();
+          if (n == 0) return;
+
+          const float dx = tx - 120.0f;
+          const float dy = ty - 120.0f;
+          const float r = sqrtf(dx * dx + dy * dy);
+
+          if (r < 60.0f) {
+            ESP_LOGD("rt", "touch %d/%d r=%d center", tx, ty, (int) r);
+            if (id(rt_browse) >= 0) id(rt_leave_browse_now).execute();
+            return;
+          }
+
+          const float step = 6.2831853f / n;
+          int i = (int) lroundf((atan2f(dy, dx) + 1.5707963f) / step);
+          i = ((i % n) + n) % n;
+
+          ESP_LOGD("rt", "touch %d/%d r=%d dot=%d", tx, ty, (int) r, i);
+
+          if (id(rt_browse) == i) {
+            id(rt_leave_browse_now).execute();
+            return;
+          }
+
+          id(rt_browse) = i;
+          id(rt_leave_browse).execute();
+          id(rt_render).execute();
+
+  - id: rt_click
+    then:
+      - if:
+          condition:
+            lambda: "return id(rt_browse) >= 0;"
+          then:
+            - script.execute: rt_leave_browse_now
+          else:
+            - script.execute: rt_next_demo
+
+  - id: rt_load_demo
+    then:
+      - lambda: |-
+          const std::string G_ZAHN  = "";
+          const std::string G_KLEID = "";
+          const std::string G_BROT  = "";
+          const std::string G_RANZ  = "";
+          const std::string G_FUSS  = "";
+          const std::string G_RUNTER= "";
+          const std::string G_HOCH  = "";
+          const std::string G_PARTY = "";
+          const std::string G_HAAR  = "";
+
+          static const char *SETS[] = {${demo_sets}};
+          const int total = sizeof(SETS) / sizeof(SETS[0]);
+          const int d = ((id(rt_demo) % total) + total) % total;
+          id(rt_demo) = d;
+          const std::string dots = SETS[d];
+
+          const std::string glyphs = G_KLEID + "|" + G_ZAHN + "|" + G_HAAR + "|" +
+                                     G_BROT + "|" + G_RANZ + "|" + G_FUSS;
+          const std::string labels = "Anziehen|Zähneputzen|Haare|Frühstück|Ranzen|Schuhe";
+
+          id(rt_glyphs) = glyphs;
+          id(rt_labels) = labels;
+          id(rt_color)  = ${color_anna};
+          id(rt_name)   = "Anna";
+          id(rt_browse) = -1;
+
+          auto nth = [](const std::string &s, int n) -> std::string {
+            size_t start = 0;
+            for (int k = 0; k < n; k++) {
+              size_t p = s.find('|', start);
+              if (p == std::string::npos) return std::string();
+              start = p + 1;
+            }
+            size_t e = s.find('|', start);
+            return s.substr(start, e == std::string::npos ? std::string::npos : e - start);
+          };
+
+          auto as_task = [&](const char *unused, int idx) {
+            id(rt_state) = "task";
+            id(rt_index) = idx;
+            id(rt_glyph) = nth(glyphs, idx);
+            id(rt_label) = nth(labels, idx);
+          };
+
+          id(rt_dots) = dots;
+
+          int idx = -1;
+          for (size_t i = 0; i < dots.size(); i++) {
+            if (dots[i] == 'o') { idx = (int) i; break; }
+          }
+
+          if (dots.find_first_not_of('x') == std::string::npos) {
+            id(rt_state) = "done";
+            id(rt_index) = -1;
+            id(rt_glyph) = G_PARTY;
+            id(rt_label) = "Geschafft";
+          } else if (idx < 0) {
+            id(rt_state) = "elsewhere";
+            id(rt_index) = -1;
+            id(rt_glyph) = ${hint_up} ? G_HOCH : G_RUNTER;
+            id(rt_label) = "${station_hint}";
+          } else {
+            as_task(dots.c_str(), idx);
+          }
+      - script.execute: rt_render
+      - if:
+          condition:
+            lambda: 'return id(rt_state) == "done";'
+          then:
+            - script.execute: rt_done_sound
+
+esphome:
+  on_boot:
+    - priority: -100
+      then:
+        - script.execute: rt_load_demo
+
