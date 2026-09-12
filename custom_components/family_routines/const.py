@@ -9,7 +9,7 @@ GLOBAL_DATA_KEY = "_global"
 SUBENTRY_TYPE_PERSON = "person"
 SUBENTRY_TYPE_STATION = "station"
 
-PLATFORMS: list[str] = ["sensor", "event", "button", "todo"]
+PLATFORMS: list[str] = ["sensor", "event", "todo"]
 
 CONF_NAME = "name"
 CONF_COLOR = "color"

@@ -21,12 +21,3 @@ def station_device_info(subentry_id: str, name: str) -> DeviceInfo:
         manufacturer="Family Routines",
         model="Station",
     )
-
-
-def routine_device_info(routine_id: str, name: str) -> DeviceInfo:
-    return DeviceInfo(
-        identifiers={(DOMAIN, f"routine_{routine_id}")},
-        name=name,
-        manufacturer="Family Routines",
-        model="Routine",
-    )

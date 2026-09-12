@@ -112,11 +112,6 @@
           }
         }
       }
-    },
-    "button": {
-      "reset": {
-        "name": "Zurücksetzen"
-      }
     }
   },
   "services": {
@@ -226,7 +221,7 @@
       "fields": {
         "name": {
           "name": "Name",
-          "description": "Erscheint am Gerät der Routine und an ihren Schaltflächen."
+          "description": "Erscheint in der App und an den Aufgabenlisten der Routine."
         },
         "window_start": {
           "name": "Fensteranfang",

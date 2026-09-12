@@ -112,11 +112,6 @@
           }
         }
       }
-    },
-    "button": {
-      "reset": {
-        "name": "Reset"
-      }
     }
   },
   "services": {
@@ -226,7 +221,7 @@
       "fields": {
         "name": {
           "name": "Name",
-          "description": "Shown on the routine's device and buttons."
+          "description": "Shown in the app and on the routine's to-do lists."
         },
         "window_start": {
           "name": "Window start",
