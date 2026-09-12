@@ -29,18 +29,18 @@ async def async_setup_entry(
     @callback
     def _sync_routines() -> None:
         persons = coordinator.persons()
-        new = []
+        pending: dict[str, list[RoutineTodoList]] = {}
         for routine in coordinator.routines.ordered():
             for person_id in routine.person_ids:
                 person = persons.get(person_id)
                 if person is None or (routine.id, person_id) in known:
                     continue
                 known.add((routine.id, person_id))
-                new.append(
+                pending.setdefault(person_id, []).append(
                     RoutineTodoList(coordinator, routine.id, routine.name, person)
                 )
-        if new:
-            async_add_entities(new)
+        for person_id, entities in pending.items():
+            async_add_entities(entities, config_subentry_id=person_id)
 
     _sync_routines()
     config_entry.async_on_unload(
