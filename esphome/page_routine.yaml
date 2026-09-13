@@ -1,7 +1,7 @@
 substitutions:
-  color_anna: "0xE85D9C"
-  color_ben: "0x3FA95E"
   color_muted: "0x6B6B6B"
+  clock_size: "72"
+  routine_clock: ha_time
 
 globals:
   - id: rt_state
@@ -45,12 +45,14 @@ globals:
     type: int
     restore_value: false
     initial_value: "-1"
-  - id: rt_demo
-    type: int
-    restore_value: false
-    initial_value: "0"
 
 font:
+  - id: routine_clock_font
+    file: "gfonts://Roboto@300"
+    size: ${clock_size}
+    bpp: 4
+    glyphs: "0123456789:"
+
   - id: routine_icons
     file: "gfonts://Material+Symbols+Outlined"
     size: ${icons_xl}
@@ -115,6 +117,11 @@ lvgl:
       pad_all: 0
       widgets:
         - label:
+            id: lbl_clock
+            align: CENTER
+            text_font: routine_clock_font
+            text: ""
+        - label:
             id: lbl_glyph
             align: CENTER
             y: -29
@@ -168,11 +175,25 @@ script:
             return s.substr(start, e == std::string::npos ? std::string::npos : e - start);
           };
 
+          const bool idle = (id(rt_state) == "idle");
           const std::string &dots_s = id(rt_dots);
-          const int n = (int) dots_s.length();
+          const int n = idle ? 0 : (int) dots_s.length();
           const int browse = id(rt_browse);
+          const int ring = idle ? ${color_muted} : id(rt_color);
 
-          lv_obj_set_style_border_color(id(routine_page)->obj, lv_color_hex(id(rt_color)), LV_PART_MAIN);
+          lv_obj_set_style_border_color(id(routine_page)->obj, lv_color_hex(ring), LV_PART_MAIN);
+
+          lv_obj_t *faces[3] = {id(lbl_glyph), id(lbl_word), id(lbl_name)};
+          for (lv_obj_t *face : faces) {
+            if (idle) lv_obj_add_flag(face, LV_OBJ_FLAG_HIDDEN);
+            else lv_obj_clear_flag(face, LV_OBJ_FLAG_HIDDEN);
+          }
+          if (idle) {
+            lv_obj_clear_flag(id(lbl_clock), LV_OBJ_FLAG_HIDDEN);
+            id(rt_clock).execute();
+          } else {
+            lv_obj_add_flag(id(lbl_clock), LV_OBJ_FLAG_HIDDEN);
+          }
 
           std::string glyph, word;
           if (browse >= 0 && browse < n) {
@@ -236,6 +257,15 @@ script:
             }
           }
 
+  - id: rt_clock
+    then:
+      - lambda: |-
+          auto now = id(${routine_clock}).now();
+          const std::string text = now.is_valid() ? now.strftime("%H:%M") : std::string();
+          if (text != lv_label_get_text(id(lbl_clock))) {
+            lv_label_set_text(id(lbl_clock), text.c_str());
+          }
+
   - id: rt_browse_step
     parameters:
       dir: int
@@ -286,11 +316,6 @@ script:
       - delay: 80ms
       - rtttl.play: "geschafft:d=8,o=6,b=160:g,b,d7,4g7,e7,d7,b,4d7,16p,16d7,16e7,16f#7,2g7"
 
-  - id: rt_next_demo
-    then:
-      - lambda: "id(rt_demo) += 1;"
-      - script.execute: rt_load_demo
-
   - id: rt_touch
     parameters:
       tx: int
@@ -325,93 +350,17 @@ script:
           id(rt_leave_browse).execute();
           id(rt_render).execute();
 
-  - id: rt_click
+interval:
+  - interval: 5s
     then:
       - if:
           condition:
-            lambda: "return id(rt_browse) >= 0;"
+            lambda: 'return id(rt_state) == "idle";'
           then:
-            - script.execute: rt_leave_browse_now
-          else:
-            - script.execute: rt_next_demo
-
-  - id: rt_load_demo
-    then:
-      - lambda: |-
-          const std::string G_ZAHN  = "";
-          const std::string G_KLEID = "";
-          const std::string G_BROT  = "";
-          const std::string G_RANZ  = "";
-          const std::string G_FUSS  = "";
-          const std::string G_RUNTER= "";
-          const std::string G_HOCH  = "";
-          const std::string G_PARTY = "";
-          const std::string G_HAAR  = "";
-
-          static const char *SETS[] = {${demo_sets}};
-          const int total = sizeof(SETS) / sizeof(SETS[0]);
-          const int d = ((id(rt_demo) % total) + total) % total;
-          id(rt_demo) = d;
-          const std::string dots = SETS[d];
-
-          const std::string glyphs = G_KLEID + "|" + G_ZAHN + "|" + G_HAAR + "|" +
-                                     G_BROT + "|" + G_RANZ + "|" + G_FUSS;
-          const std::string labels = "Anziehen|Zähneputzen|Haare|Frühstück|Ranzen|Schuhe";
-
-          id(rt_glyphs) = glyphs;
-          id(rt_labels) = labels;
-          id(rt_color)  = ${color_anna};
-          id(rt_name)   = "Anna";
-          id(rt_browse) = -1;
-
-          auto nth = [](const std::string &s, int n) -> std::string {
-            size_t start = 0;
-            for (int k = 0; k < n; k++) {
-              size_t p = s.find('|', start);
-              if (p == std::string::npos) return std::string();
-              start = p + 1;
-            }
-            size_t e = s.find('|', start);
-            return s.substr(start, e == std::string::npos ? std::string::npos : e - start);
-          };
-
-          auto as_task = [&](const char *unused, int idx) {
-            id(rt_state) = "task";
-            id(rt_index) = idx;
-            id(rt_glyph) = nth(glyphs, idx);
-            id(rt_label) = nth(labels, idx);
-          };
-
-          id(rt_dots) = dots;
-
-          int idx = -1;
-          for (size_t i = 0; i < dots.size(); i++) {
-            if (dots[i] == 'o') { idx = (int) i; break; }
-          }
-
-          if (dots.find_first_not_of('x') == std::string::npos) {
-            id(rt_state) = "done";
-            id(rt_index) = -1;
-            id(rt_glyph) = G_PARTY;
-            id(rt_label) = "Geschafft";
-          } else if (idx < 0) {
-            id(rt_state) = "elsewhere";
-            id(rt_index) = -1;
-            id(rt_glyph) = ${hint_up} ? G_HOCH : G_RUNTER;
-            id(rt_label) = "${station_hint}";
-          } else {
-            as_task(dots.c_str(), idx);
-          }
-      - script.execute: rt_render
-      - if:
-          condition:
-            lambda: 'return id(rt_state) == "done";'
-          then:
-            - script.execute: rt_done_sound
+            - script.execute: rt_clock
 
 esphome:
   on_boot:
     - priority: -100
       then:
-        - script.execute: rt_load_demo
-
+        - script.execute: rt_render

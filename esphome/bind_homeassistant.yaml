@@ -1,0 +1,166 @@
+substitutions:
+  keepalive_interval: 20s
+
+text_sensor:
+  - platform: homeassistant
+    id: rt_src_state
+    entity_id: ${routine_entity}
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x == "unavailable" || x == "unknown") {
+            id(rt_state) = "idle";
+            id(rt_dots) = "";
+            id(rt_glyph) = "";
+            id(rt_label) = "";
+            id(rt_name) = "";
+            id(rt_browse) = -1;
+            return;
+          }
+          if (x == "done" && id(rt_state) != "done") {
+            id(rt_done_sound).execute();
+          }
+          id(rt_state) = x;
+      - script.execute: rt_refresh
+
+  - platform: homeassistant
+    id: rt_src_person
+    entity_id: ${routine_entity}
+    attribute: person
+    internal: true
+    on_value:
+      - lambda: "id(rt_name) = x;"
+      - script.execute: rt_refresh
+
+  - platform: homeassistant
+    id: rt_src_glyph
+    entity_id: ${routine_entity}
+    attribute: glyph
+    internal: true
+    on_value:
+      - lambda: "id(rt_glyph) = x;"
+      - script.execute: rt_refresh
+
+  - platform: homeassistant
+    id: rt_src_label
+    entity_id: ${routine_entity}
+    attribute: label
+    internal: true
+    on_value:
+      - lambda: "id(rt_label) = x;"
+      - script.execute: rt_refresh
+
+  - platform: homeassistant
+    id: rt_src_dots
+    entity_id: ${routine_entity}
+    attribute: dots
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x != id(rt_dots)) {
+            id(rt_dots) = x;
+            id(rt_browse) = -1;
+          }
+      - script.execute: rt_refresh
+
+  - platform: homeassistant
+    id: rt_src_glyphs
+    entity_id: ${routine_entity}
+    attribute: glyphs
+    internal: true
+    on_value:
+      - lambda: "id(rt_glyphs) = x;"
+      - script.execute: rt_refresh
+
+  - platform: homeassistant
+    id: rt_src_labels
+    entity_id: ${routine_entity}
+    attribute: labels
+    internal: true
+    on_value:
+      - lambda: "id(rt_labels) = x;"
+      - script.execute: rt_refresh
+
+  - platform: homeassistant
+    id: rt_src_color
+    entity_id: ${routine_entity}
+    attribute: color
+    internal: true
+    on_value:
+      - lambda: |-
+          std::string value = x;
+          if (!value.empty() && value[0] == '#') {
+            value.erase(0, 1);
+          }
+          if (value.length() == 6) {
+            id(rt_color) = (int) strtol(value.c_str(), nullptr, 16);
+          }
+      - script.execute: rt_refresh
+
+sensor:
+  - platform: homeassistant
+    id: rt_src_index
+    entity_id: ${routine_entity}
+    attribute: index
+    internal: true
+    on_value:
+      - lambda: "id(rt_index) = (int) x;"
+      - script.execute: rt_refresh
+
+script:
+  - id: rt_refresh
+    mode: restart
+    then:
+      - delay: 120ms
+      - script.execute: rt_render
+
+  - id: rt_scan
+    parameters:
+      uid: string
+    then:
+      - homeassistant.action:
+          action: family_routines.scan
+          data:
+            station: ${devicename}
+          data_template:
+            uid: "{{ uid }}"
+          variables:
+            uid: !lambda "return uid;"
+
+  - id: rt_keepalive
+    mode: single
+    then:
+      - homeassistant.action:
+          action: family_routines.keepalive
+          data:
+            station: ${devicename}
+      - delay: ${keepalive_interval}
+
+  - id: rt_select_person
+    parameters:
+      dir: int
+    then:
+      - homeassistant.action:
+          action: family_routines.select_person
+          data:
+            station: ${devicename}
+          data_template:
+            direction: "{{ dir }}"
+          variables:
+            dir: !lambda "return dir;"
+
+  - id: rt_click
+    then:
+      - if:
+          condition:
+            lambda: "return id(rt_browse) >= 0;"
+          then:
+            - script.execute: rt_leave_browse_now
+          else:
+            - if:
+                condition:
+                  lambda: 'return id(rt_state) == "idle";'
+                then:
+                  - script.execute: {id: rt_select_person, dir: 1}
+                else:
+                  - script.execute: rt_keepalive
