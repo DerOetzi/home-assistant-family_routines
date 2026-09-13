@@ -47,6 +47,14 @@ ATTR_LABELS = "labels"
 ATTR_INDEX = "index"
 ATTR_DONE_COUNT = "done_count"
 ATTR_TOTAL = "total"
+ATTR_LAST_SCAN = "last_scan"
+
+SCAN_DONE = "done"
+SCAN_REPEAT = "repeat"
+SCAN_PERSON = "person"
+SCAN_WRONG_PLACE = "wrong_place"
+SCAN_LEARNED = "learned"
+SCAN_UNKNOWN = "unknown"
 
 LABEL_SEPARATOR = "|"
 

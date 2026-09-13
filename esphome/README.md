@@ -61,6 +61,18 @@ colour it could be.
 `done` plays the finish tune, but only on the way in, not on every update
 that leaves the routine finished.
 
+`last_scan` picks the short sound after a card is read. The reader itself
+stays silent, because only Home Assistant knows what the card did.
+
+| Result | Sound |
+| --- | --- |
+| `done`, `learned` | rising two-note confirmation, skipped when the routine just finished |
+| `repeat`, `person` | one neutral note |
+| `wrong_place`, `unknown` | falling two-note error |
+
+The first value after boot is only remembered, so a restart never replays
+the last scan. Browsing into an empty direction keeps its own muted bump.
+
 ## What it exposes
 
 Input handling is deliberately left outside. The packages define no encoder,

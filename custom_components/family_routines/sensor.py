@@ -6,7 +6,12 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import SIGNAL_STATE_CHANGED, SUBENTRY_TYPE_PERSON, SUBENTRY_TYPE_STATION
+from .const import (
+    ATTR_LAST_SCAN,
+    SIGNAL_STATE_CHANGED,
+    SUBENTRY_TYPE_PERSON,
+    SUBENTRY_TYPE_STATION,
+)
 from .coordinator import FamilyRoutinesCoordinator, async_get_coordinator
 from .entities import person_device_info, station_device_info
 
@@ -69,7 +74,10 @@ class StationSensor(FamilyRoutinesSensor):
     @property
     def extra_state_attributes(self) -> dict:
         _state, attributes = self._coordinator.view_for_station(self._subentry_id)
-        return attributes
+        return {
+            **attributes,
+            ATTR_LAST_SCAN: self._coordinator.last_scan(self._subentry_id),
+        }
 
 
 class PersonProgressSensor(FamilyRoutinesSensor):

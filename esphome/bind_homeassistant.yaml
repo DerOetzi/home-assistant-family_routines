@@ -1,6 +1,16 @@
 substitutions:
   keepalive_interval: 20s
 
+globals:
+  - id: rt_scan_seq
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+  - id: rt_scan_primed
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
 text_sensor:
   - platform: homeassistant
     id: rt_src_state
@@ -96,6 +106,36 @@ text_sensor:
             id(rt_color) = (int) strtol(value.c_str(), nullptr, 16);
           }
       - script.execute: rt_refresh
+
+  - platform: homeassistant
+    id: rt_src_last_scan
+    entity_id: ${routine_entity}
+    attribute: last_scan
+    internal: true
+    on_value:
+      - lambda: |-
+          const size_t colon = x.find(':');
+          const std::string seq = colon == std::string::npos ? std::string() : x.substr(0, colon);
+          const std::string result = colon == std::string::npos ? std::string() : x.substr(colon + 1);
+
+          if (id(rt_scan_primed) && seq == id(rt_scan_seq)) {
+            return;
+          }
+          id(rt_scan_seq) = seq;
+          if (!id(rt_scan_primed)) {
+            id(rt_scan_primed) = true;
+            return;
+          }
+
+          if (result == "done" || result == "learned") {
+            if (id(rt_state) != "done") {
+              id(rt_tone_confirm).execute();
+            }
+          } else if (result == "repeat" || result == "person") {
+            id(rt_tone_neutral).execute();
+          } else if (result == "wrong_place" || result == "unknown") {
+            id(rt_tone_error).execute();
+          }
 
 sensor:
   - platform: homeassistant

@@ -296,6 +296,18 @@ script:
     then:
       - rtttl.play: "bump:d=32,o=5,b=160:c"
 
+  - id: rt_tone_confirm
+    then:
+      - rtttl.play: "ja:d=16,o=6,b=180:c,g"
+
+  - id: rt_tone_neutral
+    then:
+      - rtttl.play: "hm:d=16,o=6,b=180:e"
+
+  - id: rt_tone_error
+    then:
+      - rtttl.play: "nein:d=16,o=6,b=180:e,8c"
+
   - id: rt_leave_browse
     mode: restart
     then:

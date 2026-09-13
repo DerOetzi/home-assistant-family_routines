@@ -25,6 +25,12 @@ from .const import (
     EVENT_SCAN,
     GLOBAL_DATA_KEY,
     SIGNAL_ROUTINES_CHANGED,
+    SCAN_DONE,
+    SCAN_LEARNED,
+    SCAN_PERSON,
+    SCAN_REPEAT,
+    SCAN_UNKNOWN,
+    SCAN_WRONG_PLACE,
     SIGNAL_STATE_CHANGED,
     SUBENTRY_TYPE_PERSON,
     SUBENTRY_TYPE_STATION,
@@ -48,6 +54,8 @@ class FamilyRoutinesCoordinator:
         self._context: dict[str, str] = {}
         self._context_timers: dict[str, Callable[[], None]] = {}
         self._reset_timers: list[Callable[[], None]] = []
+        self._scan_seq = 0
+        self._last_scan: dict[str, str] = {}
 
     async def async_load(self) -> None:
         await self.routines.async_load()
@@ -260,6 +268,13 @@ class FamilyRoutinesCoordinator:
         async_dispatcher_send(self.hass, SIGNAL_ROUTINES_CHANGED)
         self.async_notify()
 
+    def last_scan(self, station_id: str) -> str:
+        return self._last_scan.get(station_id, "")
+
+    def _record_scan(self, station_id: str, result: str) -> None:
+        self._scan_seq += 1
+        self._last_scan[station_id] = f"{self._scan_seq}:{result}"
+
     async def async_scan(self, uid: str, station_reference: str) -> None:
         station = self.resolve_station(station_reference)
         if station is None:
@@ -275,10 +290,13 @@ class FamilyRoutinesCoordinator:
             pending = self.pending_learn
             self.pending_learn = None
             await self.async_bind_card(uid, **pending)
+            self._record_scan(station.id, SCAN_LEARNED)
+            self.async_notify()
             return
 
         if card is None:
             self.last_unknown_uid = uid
+            self._record_scan(station.id, SCAN_UNKNOWN)
             self.hass.bus.async_fire(
                 EVENT_CARD_UNKNOWN, {"uid": uid, "station": station.id}
             )
@@ -286,6 +304,7 @@ class FamilyRoutinesCoordinator:
             return
 
         if card.kind == CARD_KIND_STATUS and card.person_id:
+            self._record_scan(station.id, SCAN_PERSON)
             self.async_set_context(station.id, card.person_id)
             return
 
@@ -293,20 +312,23 @@ class FamilyRoutinesCoordinator:
 
     async def _async_apply_task_card(self, card: Card, station: StationRef) -> None:
         person_id = card.person_id or self.context_person_id(station.id)
-        if person_id is None or not card.routine_id or not card.task_id:
+        routine = self.routines.get(card.routine_id or "")
+        task = routine.get_task(card.task_id or "") if routine else None
+        if person_id is None or routine is None or task is None:
+            self._record_scan(station.id, SCAN_UNKNOWN)
+            self.async_notify()
             return
 
-        routine = self.routines.get(card.routine_id)
-        if routine is None:
-            return
-
-        task = routine.get_task(card.task_id)
-        if task is None or not task.runs_at(station.id):
+        if not task.runs_at(station.id):
+            self._record_scan(station.id, SCAN_WRONG_PLACE)
             self.async_set_context(station.id, person_id)
             return
 
         if self.day.set_done(routine.id, person_id, task.id):
             await self.day.async_save()
+            self._record_scan(station.id, SCAN_DONE)
+        else:
+            self._record_scan(station.id, SCAN_REPEAT)
 
         self.async_set_context(station.id, person_id)
 
