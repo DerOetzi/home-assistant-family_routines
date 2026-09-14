@@ -4,9 +4,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntry
 
-from . import services
+from . import panel, services, websocket_api
 from .const import DOMAIN, GLOBAL_DATA_KEY, PLATFORMS
 from .coordinator import FamilyRoutinesCoordinator
+
+FRONTEND_REGISTERED = "_frontend_registered"
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -17,6 +19,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][GLOBAL_DATA_KEY] = {"entry": entry, "coordinator": coordinator}
 
     services.async_setup(hass, coordinator)
+
+    if not hass.data[DOMAIN].get(FRONTEND_REGISTERED):
+        websocket_api.async_setup(hass)
+        await panel.async_setup(hass)
+        hass.data[DOMAIN][FRONTEND_REGISTERED] = True
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -48,3 +55,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         services.async_unload(hass)
 
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    panel.async_remove(hass)
+    hass.data.get(DOMAIN, {}).pop(FRONTEND_REGISTERED, None)

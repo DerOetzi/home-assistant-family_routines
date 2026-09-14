@@ -133,37 +133,12 @@ def async_setup(hass: HomeAssistant, coordinator: FamilyRoutinesCoordinator) -> 
             _person_id(coordinator, person_reference) if person_reference else None
         )
 
-        if not (routine_id and task_id) and person_id is None:
-            raise ServiceValidationError(
-                "learn_card needs either routine_id plus task_id, or person_id"
-            )
-
-        if routine_id:
-            routine = coordinator.routines.get(routine_id)
-            if routine is None:
-                raise ServiceValidationError(f"unknown routine: {routine_id}")
-            if task_id and routine.get_task(task_id) is None:
-                raise ServiceValidationError(f"unknown task: {task_id}")
-
-        uid = call.data.get("uid") or coordinator.last_unknown_uid
-        binding = {
-            "routine_id": routine_id,
-            "task_id": task_id,
-            "person_id": person_id,
-        }
-
-        if uid is None:
-            coordinator.pending_learn = binding
-            return
-
-        existing = coordinator.cards.get(uid)
-        if existing is not None:
-            raise ServiceValidationError(
-                f"card {uid} is already assigned to "
-                f"{coordinator.describe_card(existing)}"
-            )
-
-        await coordinator.async_bind_card(uid, **binding)
+        await coordinator.async_learn_card(
+            call.data.get("uid") or coordinator.last_unknown_uid,
+            routine_id=routine_id,
+            task_id=task_id,
+            person_id=person_id,
+        )
 
     async def _complete(call: ServiceCall) -> None:
         routine_id = call.data["routine_id"]

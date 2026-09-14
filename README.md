@@ -2,7 +2,7 @@
 
 Home Assistant integration for step-by-step household routines with NFC picture cards and per-room scan points.
 
-> **Status: early development.** The routine logic, the services and the entities work. There is no panel yet, so routines and cards are set up through service calls in the developer tools.
+> **Status: early development.** The routine logic, the services, the entities and the panel work.
 
 ## What it does
 
@@ -24,7 +24,7 @@ Routines and tasks can also be limited to certain weekdays. A routine set to Mon
 | Task | One step of a routine, with an icon, a word and an order. |
 | Card | An NFC tag. Either a task card or a person's status card. |
 
-People and scan points are sub-entries of the integration and therefore admin-only. Routines, tasks and cards live in storage and are meant to be edited without admin rights.
+People and scan points are sub-entries of the integration and therefore admin-only. Routines, tasks and cards live in storage and are edited in the panel, which needs no admin rights.
 
 Everyone assigned to a routine shares its task list and keeps their own progress. If someone needs a different list, give them their own routine.
 
@@ -38,11 +38,23 @@ One sensor per scan point carries everything a display needs. Its state is `idle
 
 `last_scan` tells the display what the most recent card at this scan point did, so it can answer with the right sound. It reads `<sequence>:<result>`, where the result is `done`, `repeat`, `person`, `wrong_place`, `learned` or `unknown`. The sequence grows with every scan, which lets a display tell a new scan from an update that merely repeats the old result.
 
-Icons travel by name. The integration keeps a small catalogue mapping each name to its Material Symbols codepoint and hands the display a finished character, because a display font contains only the characters baked into it. Names outside the catalogue may be given as a raw hex codepoint.
+Icons travel by name. The integration keeps a catalogue mapping each name to its Material Symbols codepoint and hands the display a finished character, because a display font contains only the characters baked into it. The catalogue holds exactly the 45 glyphs of the reference firmware font: 40 task symbols in six groups, four signpost arrows and the finish symbol. Names outside the catalogue may be given as a raw hex codepoint.
+
+## Panel
+
+The integration adds a *Routines* entry to the sidebar. It opens on *Today*; the gear in the toolbar switches to the configuration tabs *Routines* and *Cards* and back.
+
+| Tab | What it does |
+| --- | --- |
+| Today | Every routine with each person's tasks for today. Tap a task to check it off or undo it, reset one person or everyone. |
+| Routines | Create and edit routines and their tasks: name, time window, days, people, symbol, scan points, order. |
+| Cards | Learn a card by picking its task or person, then holding it to any scan point. Lists every card and the tasks still without one. |
+
+Symbols in the panel are drawn with Material Symbols loaded from Google Fonts, limited to the names in use, so they look exactly like the display and the printed cards.
 
 ## Services
 
-`scan` and `keepalive` are what a scan point calls. `learn_card`, `complete`, `select_person` and `reset` cover everything else a routine needs. Until the panel exists, `add_routine`, `add_task`, `remove_routine`, `remove_task` and `get_routines` maintain the data; the first two return the new id.
+`scan` and `keepalive` are what a scan point calls. `learn_card`, `complete`, `select_person` and `reset` cover everything else a routine needs. `add_routine`, `add_task`, `remove_routine`, `remove_task` and `get_routines` cover automations and scripts; the first two return the new id. Editing and reordering happen in the panel.
 
 ## Hardware
 
