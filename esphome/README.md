@@ -40,7 +40,8 @@ The scan point's `device_name` in the integration must match the ESPHome
 
 Fonts `roboto_md` and `roboto_lg` come from the display framework. The page
 brings its own icon font, `routine_icons`, with 45 Material Symbols glyphs
-at `icons_xl`.
+at `icons_xl`. They are exactly the integration's icon catalogue; a symbol
+added to one has to be added to the other.
 
 ## What arrives from the sensor
 

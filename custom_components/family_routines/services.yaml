@@ -151,11 +151,45 @@ add_task:
           translation_key: task_icon
           options:
             - apparel
-            - dentistry
-            - self_care
-            - breakfast_dining
-            - backpack
             - footprint
+            - self_care
+            - face
+            - dentistry
+            - wash
+            - soap
+            - shower
+            - bathtub
+            - wc
+            - breakfast_dining
+            - free_breakfast
+            - brunch_dining
+            - lunch_dining
+            - nutrition
+            - dishwasher
+            - backpack
+            - school
+            - menu_book
+            - schedule
+            - directions_walk
+            - directions_bike
+            - directions_bus
+            - umbrella
+            - home
+            - bed
+            - cleaning_services
+            - toys
+            - potted_plant
+            - pets
+            - family_restroom
+            - sports_soccer
+            - pool
+            - music_note
+            - waving_hand
+            - star
+            - favorite
+            - check_circle
+            - emoji_events
+            - bolt
     stations:
       required: false
       selector:
