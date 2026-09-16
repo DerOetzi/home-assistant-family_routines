@@ -1,21 +1,32 @@
 # ESPHome display package
 
-The round-display side of Family Routines. Two ESPHome packages drawing one
-routine for one person at one scan point, and sending every card scan back.
+The round-display side of Family Routines. Three ESPHome packages drawing one
+routine for one person at one scan point, sending every card scan back, and
+putting the display to sleep when nobody needs it.
+
+They build on the [display framework](https://github.com/DerOetzi/esphome-homeassistant-display-framework)
+with its shared `main.yaml` and the `round` format.
 
 ```yaml
 substitutions:
+  home_page: routine_page
   routine_entity: sensor.flur_og_routine
 
 packages:
+  device: !include displays/devices/M5Dial.yaml
+  locales: !include displays/locales/de_DE.yaml
+  main: !include displays/main.yaml
+  format: !include displays/formats/round/format.yaml
   routine: !include family_routines/page_routine.yaml
   binding: !include family_routines/bind_homeassistant.yaml
+  display: !include family_routines/bind_display.yaml
 ```
 
 `page_routine.yaml` draws and knows nothing about Home Assistant.
 `bind_homeassistant.yaml` fills its globals from the scan point sensor and
-calls the integration's services. Including the page alone gives a device
-that renders whatever you put in the globals yourself.
+calls the integration's services. `bind_display.yaml` ties the routine to the
+framework's standby: it knows the routine state and the framework scripts,
+but nothing about Home Assistant.
 
 ## What Home Assistant has to allow
 
@@ -35,8 +46,7 @@ The scan point's `device_name` in the integration must match the ESPHome
 | `routine_entity` | the scan point sensor, e.g. `sensor.flur_og_routine` |
 | `icons_xl` | icon font size, 110 on a 240 px round display |
 | `keepalive_interval` | how long one keepalive silences the next, 20s by default |
-| `routine_clock` | id of the `time` component the idle clock reads, `ha_time` by default |
-| `clock_size` | idle clock font size, 72 by default |
+| `home_page` | `routine_page`, the page the framework returns to |
 
 Fonts `roboto_md` and `roboto_lg` come from the display framework. The page
 brings its own icon font, `routine_icons`, with 45 Material Symbols glyphs
@@ -55,9 +65,28 @@ to be listed in the `routine_icons` font. The colour arrives as `#RRGGBB`
 and is parsed into the ring colour, so a person's colour lives in Home
 Assistant and nowhere else.
 
-`idle` shows a clock in a grey ring instead of the routine. The colour the
-sensor sends with `idle` is ignored, because nobody is standing there whose
-colour it could be.
+`idle` hides symbol, word, name and dots and greys the ring. The clock on top
+of it belongs to the framework's round format, see below.
+
+## Sleeping
+
+The framework decides between awake, standby, dark and antiburn, with the
+same entities as every other display: `Screen timeout`, `Show standby screen`,
+`Standby brightness` and `Antiburn`. Home Assistant schedules the two switches.
+
+`bind_display.yaml` adds what only a routine display needs:
+
+- **While a routine is shown the display never sleeps.** Every state other
+  than `idle` sets the framework's `standby_hold` and wakes the display.
+- **`idle` shows the clock at once**, at full brightness, and dims it after
+  `Screen timeout`. With `Show standby screen` off, or during antiburn, the
+  display goes dark straight away instead.
+- **Every input wakes it.** Scan, turn, touch and button call `rt_wake`:
+  full brightness, and in `idle` the clock with a fresh timeout. A scan at
+  night wakes the display and plays its sound like any other.
+
+The state is checked every 500 ms, so the package needs no hook in the
+Home Assistant binding.
 
 `done` plays the finish tune, but only on the way in, not on every update
 that leaves the routine finished.
@@ -90,6 +119,7 @@ Call these from your own dispatcher:
 | `rt_browse_step(dir)` | browse one step, `1` through the open tasks, `-1` through the done ones |
 | `rt_touch(tx, ty)` | jump to the dot under the touch point, centre means back |
 | `rt_render` | redraw from the globals |
+| `rt_wake` | wake the display; in `idle` show the clock with a fresh timeout |
 
 Browsing ends on its own after ten seconds, and any change to `dots` ends it
 at once, so a scan always puts the display back on the real suggestion.

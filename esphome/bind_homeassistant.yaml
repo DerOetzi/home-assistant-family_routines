@@ -168,6 +168,15 @@ script:
             uid: !lambda "return uid;"
 
   - id: rt_keepalive
+    then:
+      - if:
+          condition:
+            not:
+              script.is_running: rt_keepalive_send
+          then:
+            - script.execute: rt_keepalive_send
+
+  - id: rt_keepalive_send
     mode: single
     then:
       - homeassistant.action:

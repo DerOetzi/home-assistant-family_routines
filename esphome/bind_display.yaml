@@ -1,0 +1,75 @@
+globals:
+  - id: rt_power_idle
+    type: int
+    restore_value: false
+    initial_value: "-1"
+
+interval:
+  - interval: 500ms
+    then:
+      - script.execute: rt_power_check
+
+api:
+  on_client_connected:
+    - delay: 3s
+    - lambda: "id(rt_power_idle) = -1;"
+    - script.execute: rt_power_check
+
+script:
+  - id: rt_power_check
+    then:
+      - lambda: |-
+          const int idle = id(rt_state) == "idle" ? 1 : 0;
+          if (idle != id(rt_power_idle)) {
+            id(rt_power_idle) = idle;
+            id(rt_power_sync).execute();
+          }
+
+  - id: rt_power_sync
+    mode: restart
+    then:
+      - if:
+          condition:
+            lambda: 'return id(rt_state) == "idle";'
+          then:
+            - lambda: "id(standby_hold) = false;"
+            - if:
+                condition:
+                  lambda: "return id(switch_show_standby).state && !id(switch_antiburn).state;"
+                then:
+                  - script.execute: rt_show_clock
+                else:
+                  - script.stop: rt_idle_timer
+                  - script.execute: standby
+          else:
+            - lambda: "id(standby_hold) = true;"
+            - script.stop: rt_idle_timer
+            - script.execute: wake_display
+
+  - id: rt_wake
+    then:
+      - if:
+          condition:
+            lambda: 'return id(rt_state) == "idle";'
+          then:
+            - script.execute: rt_show_clock
+          else:
+            - script.execute: wake_display
+
+  - id: rt_show_clock
+    then:
+      - script.execute: resume_lvgl
+      - binary_sensor.template.publish:
+          id: standby_active
+          state: ON
+      - script.execute: rt_idle_timer
+
+  - id: rt_idle_timer
+    mode: restart
+    then:
+      - delay: !lambda "return id(display_timeout).state * 1000;"
+      - if:
+          condition:
+            lambda: 'return id(rt_state) == "idle";'
+          then:
+            - script.execute: standby
