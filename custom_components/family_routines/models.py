@@ -26,7 +26,7 @@ class Routine:
     sort_index: int
     window_start: str
     window_end: str
-    person_ids: list[str] = field(default_factory=list)
+    person_id: str = ""
     weekdays: list[str] = field(default_factory=list)
     tasks: list[Task] = field(default_factory=list)
 

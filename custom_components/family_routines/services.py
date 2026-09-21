@@ -50,7 +50,6 @@ COMPLETE_SCHEMA = vol.Schema(
     {
         vol.Required("routine_id"): cv.string,
         vol.Required("task_id"): cv.string,
-        vol.Required("person_id"): cv.string,
         vol.Optional("completed", default=True): cv.boolean,
     }
 )
@@ -67,21 +66,14 @@ SELECT_PERSON_SCHEMA = vol.Schema(
 
 KEEPALIVE_SCHEMA = vol.Schema({vol.Required("station"): cv.string})
 
-RESET_SCHEMA = vol.Schema(
-    {
-        vol.Optional("routine_id"): cv.string,
-        vol.Optional("person_id"): cv.string,
-    }
-)
+RESET_SCHEMA = vol.Schema({vol.Optional("routine_id"): cv.string})
 
 ADD_ROUTINE_SCHEMA = vol.Schema(
     {
         vol.Required("name"): cv.string,
         vol.Optional("window_start", default=DEFAULT_WINDOW_START): cv.string,
         vol.Optional("window_end", default=DEFAULT_WINDOW_END): cv.string,
-        vol.Optional("person_ids", default=list): vol.All(
-            cv.ensure_list, [cv.string]
-        ),
+        vol.Optional("person_id"): cv.string,
         vol.Optional("weekdays", default=list): cv.weekdays,
     }
 )
@@ -150,12 +142,7 @@ def async_setup(hass: HomeAssistant, coordinator: FamilyRoutinesCoordinator) -> 
         if routine.get_task(task_id) is None:
             raise ServiceValidationError(f"unknown task: {task_id}")
 
-        await coordinator.async_complete(
-            routine_id,
-            task_id,
-            _person_id(coordinator, call.data["person_id"]),
-            call.data["completed"],
-        )
+        await coordinator.async_complete(routine_id, task_id, call.data["completed"])
 
     async def _select_person(call: ServiceCall) -> None:
         person_reference = call.data.get("person_id")
@@ -171,30 +158,25 @@ def async_setup(hass: HomeAssistant, coordinator: FamilyRoutinesCoordinator) -> 
         coordinator.async_keepalive(_station_id(coordinator, call.data["station"]))
 
     async def _reset(call: ServiceCall) -> None:
-        person_reference = call.data.get("person_id")
-        person_id = (
-            _person_id(coordinator, person_reference) if person_reference else None
-        )
-
         routine_id = call.data.get("routine_id")
         if routine_id is not None:
             if coordinator.routines.get(routine_id) is None:
                 raise ServiceValidationError(f"unknown routine: {routine_id}")
-            await coordinator.async_reset(routine_id, person_id)
+            await coordinator.async_reset(routine_id)
             return
 
         for routine in coordinator.routines.routines:
-            await coordinator.async_reset(routine.id, person_id)
+            await coordinator.async_reset(routine.id)
 
     async def _add_routine(call: ServiceCall) -> ServiceResponse:
-        person_ids = [
-            _person_id(coordinator, reference) for reference in call.data["person_ids"]
-        ]
+        person_reference = call.data.get("person_id")
         routine = await coordinator.async_add_routine(
             call.data["name"],
             window_start=call.data["window_start"],
             window_end=call.data["window_end"],
-            person_ids=person_ids,
+            person_id=(
+                _person_id(coordinator, person_reference) if person_reference else ""
+            ),
             weekdays=call.data["weekdays"],
         )
         return {"routine_id": routine.id}

@@ -66,37 +66,31 @@ class TodayView extends HTMLElement {
     const todayIds = new Set(routine.today_task_ids);
     const tasks = routine.tasks.filter((task) => todayIds.has(task.id));
 
-    const rows = routine.person_ids
-      .map((personId) => personById[personId])
-      .filter(Boolean)
-      .map((person) => {
-        const completed = new Set(routine.completed[person.id] || []);
-        const doneCount = tasks.filter((task) => completed.has(task.id)).length;
-        const chips = tasks.length
-          ? tasks
-              .map(
-                (task) => `
-                  <button class="task ${completed.has(task.id) ? "done" : ""}"
-                    data-action="toggle" data-routine="${routine.id}" data-task="${task.id}"
-                    data-person="${person.id}" data-done="${completed.has(task.id) ? "1" : ""}"
-                    aria-pressed="${completed.has(task.id)}">
-                    ${iconMarkup(task.icon)}<span>${escapeHtml(task.label)}</span>
-                  </button>`
-              )
-              .join("")
-          : `<span class="muted">${t("no_tasks_today")}</span>`;
-        return `
-          <div class="person-row" style="--person-color:${escapeHtml(person.color)}">
-            <div class="person-head">
-              <span class="person-dot" style="background:${escapeHtml(person.color)}"></span>
-              <h3 class="grow">${escapeHtml(person.name)}</h3>
-              <span class="muted progress">${doneCount} / ${tasks.length}</span>
-              <button class="link" data-action="reset" data-routine="${routine.id}" data-person="${person.id}">${t("reset")}</button>
-            </div>
-            <div class="tasks">${chips}</div>
-          </div>`;
-      })
-      .join("");
+    const person = personById[routine.person_id];
+    const completed = new Set(routine.completed || []);
+    const doneCount = tasks.filter((task) => completed.has(task.id)).length;
+    const chips = tasks.length
+      ? tasks
+          .map(
+            (task) => `
+              <button class="task ${completed.has(task.id) ? "done" : ""}"
+                data-action="toggle" data-routine="${routine.id}" data-task="${task.id}"
+                data-done="${completed.has(task.id) ? "1" : ""}"
+                aria-pressed="${completed.has(task.id)}">
+                ${iconMarkup(task.icon)}<span>${escapeHtml(task.label)}</span>
+              </button>`
+          )
+          .join("")
+      : `<span class="muted">${t("no_tasks_today")}</span>`;
+    const rows = `
+      <div class="person-row" style="--person-color:${escapeHtml(person?.color || "#9e9e9e")}">
+        <div class="person-head">
+          <span class="person-dot" style="background:${escapeHtml(person?.color || "#9e9e9e")}"></span>
+          <h3 class="grow">${person ? escapeHtml(person.name) : t("no_person")}</h3>
+          <span class="muted progress">${doneCount} / ${tasks.length}</span>
+        </div>
+        <div class="tasks">${chips}</div>
+      </div>`;
 
     return `
       <section class="card routine ${routine.active ? "" : "inactive"}">
@@ -109,7 +103,7 @@ class TodayView extends HTMLElement {
           <span>·</span>
           <span>${weekdaySummary(t, routine.weekdays)}</span>
           <span class="grow"></span>
-          <button class="link" data-action="reset-all" data-routine="${routine.id}">${t("reset_all")}</button>
+          <button class="link" data-action="reset" data-routine="${routine.id}">${t("reset")}</button>
         </div>
         ${rows}
       </section>`;
@@ -121,24 +115,18 @@ class TodayView extends HTMLElement {
       return;
     }
     const t = translator(this._hass);
-    const { action, routine: routineId, task, person: personId } = button.dataset;
+    const { action, routine: routineId, task } = button.dataset;
     const routine = this._state.routines.find((item) => item.id === routineId);
-    const person = this._state.persons.find((item) => item.id === personId);
     try {
       if (action === "toggle") {
         button.disabled = true;
         await callWS(this._hass, "complete", {
           routine_id: routineId,
           task_id: task,
-          person_id: personId,
           completed: !button.dataset.done,
         });
       } else if (action === "reset") {
-        if (confirm(t("reset_person_confirm", { person: person?.name, routine: routine?.name }))) {
-          await callWS(this._hass, "reset", { routine_id: routineId, person_id: personId });
-        }
-      } else if (action === "reset-all") {
-        if (confirm(t("reset_all_confirm", { routine: routine?.name }))) {
+        if (confirm(t("reset_confirm", { routine: routine?.name }))) {
           await callWS(this._hass, "reset", { routine_id: routineId });
         }
       }

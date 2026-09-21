@@ -29,14 +29,20 @@ class RoutineStore:
         if not data:
             return
         self.routines = [
-            Routine(
-                **{
-                    **routine,
-                    "tasks": [Task(**task) for task in routine.get("tasks", [])],
-                }
-            )
+            Routine(**self._routine_fields(routine))
             for routine in data.get("routines", [])
         ]
+
+    @staticmethod
+    def _routine_fields(routine: dict) -> dict:
+        fields = {
+            **routine,
+            "tasks": [Task(**task) for task in routine.get("tasks", [])],
+        }
+        legacy = fields.pop("person_ids", None)
+        if "person_id" not in fields:
+            fields["person_id"] = next(iter(legacy or []), "")
+        return fields
 
     async def async_save(self) -> None:
         await self._store.async_save(
@@ -56,7 +62,7 @@ class RoutineStore:
         return None
 
     def for_person(self, person_id: str) -> list[Routine]:
-        return [r for r in self.ordered() if person_id in r.person_ids]
+        return [r for r in self.ordered() if r.person_id == person_id]
 
     def add(
         self,
@@ -64,7 +70,7 @@ class RoutineStore:
         *,
         window_start: str = DEFAULT_WINDOW_START,
         window_end: str = DEFAULT_WINDOW_END,
-        person_ids: list[str] | None = None,
+        person_id: str = "",
         weekdays: list[str] | None = None,
     ) -> Routine:
         routine = Routine(
@@ -73,7 +79,7 @@ class RoutineStore:
             sort_index=len(self.routines),
             window_start=window_start,
             window_end=window_end,
-            person_ids=list(person_ids) if person_ids else [],
+            person_id=person_id,
             weekdays=list(weekdays) if weekdays else [],
         )
         self.routines.append(routine)
@@ -86,7 +92,7 @@ class RoutineStore:
         name: str | None = None,
         window_start: str | None = None,
         window_end: str | None = None,
-        person_ids: list[str] | None = None,
+        person_id: str | None = None,
         weekdays: list[str] | None = None,
     ) -> Routine | None:
         routine = self.get(routine_id)
@@ -98,8 +104,8 @@ class RoutineStore:
             routine.window_start = window_start
         if window_end is not None:
             routine.window_end = window_end
-        if person_ids is not None:
-            routine.person_ids = list(person_ids)
+        if person_id is not None:
+            routine.person_id = person_id
         if weekdays is not None:
             routine.weekdays = list(weekdays)
         return routine
@@ -194,14 +200,6 @@ class RoutineStore:
                     changed = True
         return changed
 
-    def drop_person(self, person_id: str) -> bool:
-        changed = False
-        for routine in self.routines:
-            if person_id in routine.person_ids:
-                routine.person_ids.remove(person_id)
-                changed = True
-        return changed
-
 
 class CardStore:
     def __init__(self, hass: HomeAssistant) -> None:
@@ -227,15 +225,12 @@ class CardStore:
                 return card
         return None
 
-    def find_task_card(
-        self, routine_id: str, task_id: str, person_id: str | None
-    ) -> Card | None:
+    def find_task_card(self, routine_id: str, task_id: str) -> Card | None:
         for card in self.cards:
             if (
                 card.kind == CARD_KIND_TASK
                 and card.routine_id == routine_id
                 and card.task_id == task_id
-                and card.person_id == person_id
             ):
                 return card
         return None
@@ -246,18 +241,10 @@ class CardStore:
                 return card
         return None
 
-    def add_task_card(
-        self,
-        uid: str,
-        *,
-        routine_id: str,
-        task_id: str,
-        person_id: str | None = None,
-    ) -> Card:
+    def add_task_card(self, uid: str, *, routine_id: str, task_id: str) -> Card:
         card = Card(
             uid=uid,
             kind=CARD_KIND_TASK,
-            person_id=person_id,
             routine_id=routine_id,
             task_id=task_id,
         )
@@ -290,12 +277,6 @@ class CardStore:
             self.cards.remove(card)
         return bool(stale)
 
-    def drop_person(self, person_id: str) -> bool:
-        stale = [c for c in self.cards if c.person_id == person_id]
-        for card in stale:
-            self.cards.remove(card)
-        return bool(stale)
-
 
 class DayStore:
     def __init__(self, hass: HomeAssistant) -> None:
@@ -314,7 +295,15 @@ class DayStore:
         await self._store.async_remove()
 
     def _routine_state(self, routine_id: str) -> dict:
-        return self.routines.setdefault(routine_id, {"last_reset": None, "persons": {}})
+        state = self.routines.setdefault(routine_id, {"last_reset": None, "tasks": {}})
+        legacy = state.pop("persons", None)
+        if legacy:
+            merged: dict[str, str] = {}
+            for completed in legacy.values():
+                merged.update(completed)
+            state["tasks"] = {**merged, **state.get("tasks", {})}
+        state.setdefault("tasks", {})
+        return state
 
     def last_reset(self, routine_id: str) -> datetime | None:
         stamp = self._routine_state(routine_id).get("last_reset")
@@ -322,41 +311,29 @@ class DayStore:
             return None
         return dt_util.parse_datetime(stamp)
 
-    def completed(self, routine_id: str, person_id: str) -> dict[str, str]:
-        persons = self._routine_state(routine_id)["persons"]
-        return persons.setdefault(person_id, {})
+    def completed(self, routine_id: str) -> dict[str, str]:
+        return self._routine_state(routine_id)["tasks"]
 
-    def is_done(self, routine_id: str, person_id: str, task_id: str) -> bool:
-        return task_id in self.completed(routine_id, person_id)
+    def is_done(self, routine_id: str, task_id: str) -> bool:
+        return task_id in self.completed(routine_id)
 
-    def set_done(self, routine_id: str, person_id: str, task_id: str) -> bool:
-        completed = self.completed(routine_id, person_id)
+    def set_done(self, routine_id: str, task_id: str) -> bool:
+        completed = self.completed(routine_id)
         if task_id in completed:
             return False
         completed[task_id] = dt_util.utcnow().isoformat()
         return True
 
-    def clear_done(self, routine_id: str, person_id: str, task_id: str) -> bool:
-        completed = self.completed(routine_id, person_id)
-        return completed.pop(task_id, None) is not None
+    def clear_done(self, routine_id: str, task_id: str) -> bool:
+        return self.completed(routine_id).pop(task_id, None) is not None
 
-    def reset(
-        self, routine_id: str, person_id: str | None = None, *, stamp: datetime | None = None
-    ) -> None:
+    def reset(self, routine_id: str, *, stamp: datetime | None = None) -> None:
         state = self._routine_state(routine_id)
-        if person_id is None:
-            state["persons"] = {}
-            state["last_reset"] = (stamp or dt_util.utcnow()).isoformat()
-        else:
-            state["persons"][person_id] = {}
+        state["tasks"] = {}
+        state["last_reset"] = (stamp or dt_util.utcnow()).isoformat()
 
     def drop_routine(self, routine_id: str) -> None:
         self.routines.pop(routine_id, None)
 
-    def drop_person(self, person_id: str) -> None:
-        for state in self.routines.values():
-            state["persons"].pop(person_id, None)
-
     def drop_task(self, routine_id: str, task_id: str) -> None:
-        for completed in self._routine_state(routine_id)["persons"].values():
-            completed.pop(task_id, None)
+        self.completed(routine_id).pop(task_id, None)

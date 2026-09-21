@@ -163,10 +163,6 @@
           "name": "Task",
           "description": "The task to change."
         },
-        "person_id": {
-          "name": "Person",
-          "description": "Whose progress changes."
-        },
         "completed": {
           "name": "Completed",
           "description": "Off takes the task back."
@@ -208,10 +204,6 @@
         "routine_id": {
           "name": "Routine",
           "description": "Leave empty to reset every routine."
-        },
-        "person_id": {
-          "name": "Person",
-          "description": "Leave empty to reset everyone."
         }
       }
     },
@@ -231,13 +223,13 @@
           "name": "Window end",
           "description": "After this time the routine is no longer shown."
         },
-        "person_ids": {
-          "name": "People",
-          "description": "List of people this routine applies to."
-        },
         "weekdays": {
           "name": "Weekdays",
           "description": "Leave empty to run every day. The day a window starting before midnight belongs to is the day it opened."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "The person this routine belongs to."
         }
       }
     },

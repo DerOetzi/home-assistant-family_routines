@@ -71,7 +71,7 @@ def candidate_routines(
             continue
         if not routine.tasks_on(weekday):
             continue
-        if person_id is not None and person_id not in routine.person_ids:
+        if person_id is not None and routine.person_id != person_id:
             continue
         matching.append(routine)
     return matching
@@ -92,8 +92,7 @@ def select_routine(
     for routine in candidates:
         weekday = window_weekday(now, routine.window_start)
         if any(
-            not is_done(routine.id, person_id, task.id)
-            for task in routine.tasks_on(weekday)
+            not is_done(routine.id, task.id) for task in routine.tasks_on(weekday)
         ):
             return routine
     return candidates[0]

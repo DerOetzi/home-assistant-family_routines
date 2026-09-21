@@ -45,7 +45,7 @@ class CardsView extends HTMLElement {
       );
       form.taskId = (tasks.find((task) => !covered.has(task.id)) || tasks[0])?.id || "";
     }
-    const allowed = form.kind === "status" ? persons.map((p) => p.id) : ["", ...(routine?.person_ids || [])];
+    const allowed = form.kind === "status" ? persons.map((p) => p.id) : [];
     if (!allowed.includes(form.personId)) {
       form.personId = allowed[0] || "";
     }
@@ -55,13 +55,13 @@ class CardsView extends HTMLElement {
     const t = this._t;
     const { routines, persons } = this._state;
     const pending = this._state.pending_learn;
-    const person = persons.find((item) => item.id === pending.person_id);
     if (!pending.routine_id) {
+      const person = persons.find((item) => item.id === pending.person_id);
       return person?.name || "?";
     }
     const routine = routines.find((item) => item.id === pending.routine_id);
     const task = routine?.tasks.find((item) => item.id === pending.task_id);
-    return `${routine?.name || "?"} / ${task?.label || "?"} (${person?.name || t("for_everyone")})`;
+    return `${routine?.name || "?"} / ${task?.label || "?"}`;
   }
 
   _render() {
@@ -85,10 +85,6 @@ class CardsView extends HTMLElement {
     } else if (!persons.length || (!routines.length && form.kind === "task")) {
       learn = `<p class="empty">${!persons.length ? t("no_persons") : t("no_routines")}</p>`;
     } else {
-      const personOptions =
-        form.kind === "status"
-          ? persons
-          : (routine?.person_ids || []).map((id) => personById[id]).filter(Boolean);
       const last = this._state.last_unknown_uid;
       learn = `
         <div class="field">
@@ -117,13 +113,17 @@ class CardsView extends HTMLElement {
           </div>`
             : ""
         }
-        <div class="field">
-          <label for="person">${t("person")}</label>
-          <select id="person" name="person">
-            ${form.kind === "task" ? `<option value="" ${form.personId === "" ? "selected" : ""}>${t("person_any")}</option>` : ""}
-            ${personOptions.map((person) => `<option value="${person.id}" ${person.id === form.personId ? "selected" : ""}>${escapeHtml(person.name)}</option>`).join("")}
-          </select>
-        </div>
+        ${
+          form.kind === "status"
+            ? `
+          <div class="field">
+            <label for="person">${t("person")}</label>
+            <select id="person" name="person">
+              ${persons.map((person) => `<option value="${person.id}" ${person.id === form.personId ? "selected" : ""}>${escapeHtml(person.name)}</option>`).join("")}
+            </select>
+          </div>`
+            : ""
+        }
         <div class="actions">
           ${last ? `<button class="secondary" data-action="use-last">${t("use_last_card")}</button>` : ""}
           <button data-action="wait" ${form.kind === "task" && !form.taskId ? "disabled" : ""}><ha-icon icon="mdi:contactless-payment"></ha-icon>${t("wait_for_card")}</button>
@@ -132,12 +132,13 @@ class CardsView extends HTMLElement {
     }
 
     const cardRow = (card) => {
-      const person = personById[card.person_id];
+      const routineOfCard = routines.find((item) => item.id === card.routine_id);
+      const person = personById[card.person_id || routineOfCard?.person_id];
       return `
         <div class="card-row">
           <code>${escapeHtml(card.uid)}</code>
           <span class="grow person-chip">
-            ${person ? `<span class="person-dot" style="background:${escapeHtml(person.color)}"></span>${escapeHtml(person.name)}` : `<span class="muted">${t("for_everyone")}</span>`}
+            ${person ? `<span class="person-dot" style="background:${escapeHtml(person.color)}"></span>${escapeHtml(person.name)}` : `<span class="muted">${t("no_person")}</span>`}
           </span>
           <button class="icon" data-action="delete" data-uid="${escapeHtml(card.uid)}" title="${t("delete")}" aria-label="${t("delete")}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>
         </div>`;
@@ -228,7 +229,7 @@ class CardsView extends HTMLElement {
   _binding() {
     const form = this._form;
     return form.kind === "task"
-      ? { routine_id: form.routineId, task_id: form.taskId, person_id: form.personId || null }
+      ? { routine_id: form.routineId, task_id: form.taskId }
       : { person_id: form.personId };
   }
 

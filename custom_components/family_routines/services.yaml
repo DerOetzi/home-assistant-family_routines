@@ -41,10 +41,6 @@ complete:
       required: true
       selector:
         text:
-    person_id:
-      required: true
-      selector:
-        text:
     completed:
       required: false
       default: true
@@ -83,10 +79,6 @@ reset:
       required: false
       selector:
         text:
-    person_id:
-      required: false
-      selector:
-        text:
 
 add_routine:
   fields:
@@ -105,10 +97,10 @@ add_routine:
       example: "10:00"
       selector:
         time:
-    person_ids:
+    person_id:
       required: false
       selector:
-        object:
+        text:
     weekdays:
       required: false
       selector:

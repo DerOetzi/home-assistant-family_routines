@@ -46,9 +46,10 @@ The integration adds a *Routines* entry to the sidebar. It opens on *Today*; the
 
 | Tab | What it does |
 | --- | --- |
-| Today | Every routine with each person's tasks for today. Tap a task to check it off or undo it, reset one person or everyone. |
-| Routines | Create and edit routines and their tasks: name, time window, days, people, symbol, scan points, order. |
-| Cards | Learn a card by picking its task or person, then holding it to any scan point. Lists every card and the tasks still without one. |
+| Today | Every routine with its person's tasks for today. Tap a task to check it off or undo it, or reset the routine. |
+| Routines | Create and edit routines and their tasks: name, time window, days, person, symbol, scan points, order. |
+| Cards | Learn a card by picking its task, or a person for a status card, then holding it to any scan point. Lists every card and the tasks still without one. |
+| Designer | Build the printable picture for a card: a photo in a polaroid frame in the person's colour, the symbol and the task in the wide bottom border. |
 
 Symbols in the panel are drawn with Material Symbols loaded from Google Fonts, limited to the names in use, so they look exactly like the display and the printed cards.
 

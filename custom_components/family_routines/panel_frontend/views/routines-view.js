@@ -76,14 +76,10 @@ class RoutinesView extends HTMLElement {
 
     const cards = routines
       .map((routine) => {
-        const people = routine.person_ids
-          .map((id) => personById[id])
-          .filter(Boolean)
-          .map(
-            (person) =>
-              `<span class="person-chip"><span class="person-dot" style="background:${escapeHtml(person.color)}"></span>${escapeHtml(person.name)}</span>`
-          )
-          .join("");
+        const person = personById[routine.person_id];
+        const people = person
+          ? `<span class="person-chip"><span class="person-dot" style="background:${escapeHtml(person.color)}"></span>${escapeHtml(person.name)}</span>`
+          : `<span class="muted">${t("no_person")}</span>`;
         const tasks = routine.tasks.length
           ? routine.tasks
               .map((task, index) => {
@@ -228,7 +224,7 @@ class RoutinesView extends HTMLElement {
   _openRoutineDialog(routine) {
     const t = this._t;
     const { persons } = this._state;
-    const selectedPersons = routine ? routine.person_ids : persons.map((person) => person.id);
+    const selectedPerson = routine ? routine.person_id : persons[0]?.id || "";
     const markup = `
       <h2>${routine ? t("edit_routine") : t("add_routine")}</h2>
       <div class="field">
@@ -251,18 +247,15 @@ class RoutinesView extends HTMLElement {
         ${weekdayPicker(t, "weekdays", routine?.weekdays || [])}
       </div>
       <div class="field">
-        <span class="label">${t("persons")}</span>
-        <div class="chips">
+        <label for="person">${t("person")}</label>
+        <select id="person">
           ${persons
             .map(
-              (person) => `
-                <label class="chip-toggle">
-                  <input type="checkbox" name="persons" value="${person.id}" ${selectedPersons.includes(person.id) ? "checked" : ""}>
-                  <span><span class="person-dot" style="background:${escapeHtml(person.color)}"></span>${escapeHtml(person.name)}</span>
-                </label>`
+              (person) =>
+                `<option value="${person.id}" ${person.id === selectedPerson ? "selected" : ""}>${escapeHtml(person.name)}</option>`
             )
             .join("")}
-        </div>
+        </select>
       </div>`;
 
     this._showDialog(
@@ -272,12 +265,16 @@ class RoutinesView extends HTMLElement {
         if (!name) {
           return t("name_required");
         }
+        const personId = form.querySelector("#person")?.value || "";
+        if (!personId) {
+          return t("person_required");
+        }
         const payload = {
           name,
           window_start: form.querySelector("#start").value || "00:00",
           window_end: form.querySelector("#end").value || "00:00",
           weekdays: checkedValues(form, "weekdays"),
-          person_ids: checkedValues(form, "persons"),
+          person_id: personId,
         };
         if (routine) {
           await callWS(this._hass, "routines/update", { routine_id: routine.id, ...payload });

@@ -37,18 +37,17 @@ async def async_setup_entry(
         live: set[tuple[str, str]] = set()
         pending: dict[str, list[RoutineTodoList]] = {}
         for routine in coordinator.routines.ordered():
-            for person_id in routine.person_ids:
-                person = persons.get(person_id)
-                if person is None:
-                    continue
-                key = (routine.id, person_id)
-                live.add(key)
-                if key in known:
-                    continue
-                known.add(key)
-                pending.setdefault(person_id, []).append(
-                    RoutineTodoList(coordinator, routine.id, person)
-                )
+            person = persons.get(routine.person_id)
+            if person is None:
+                continue
+            key = (routine.id, person.id)
+            live.add(key)
+            if key in known:
+                continue
+            known.add(key)
+            pending.setdefault(person.id, []).append(
+                RoutineTodoList(coordinator, routine.id, person)
+            )
 
         for entry in er.async_entries_for_config_entry(registry, config_entry.entry_id):
             if entry.domain != "todo" or entry.platform != DOMAIN:
@@ -111,7 +110,7 @@ class RoutineTodoList(TodoListEntity):
         if routine is None:
             return None
 
-        completed = self._coordinator.day.completed(self._routine_id, self._person_id)
+        completed = self._coordinator.day.completed(self._routine_id)
         return [
             TodoItem(
                 uid=task.id,
@@ -133,6 +132,5 @@ class RoutineTodoList(TodoListEntity):
         await self._coordinator.async_complete(
             self._routine_id,
             item.uid,
-            self._person_id,
             item.status == TodoItemStatus.COMPLETED,
         )

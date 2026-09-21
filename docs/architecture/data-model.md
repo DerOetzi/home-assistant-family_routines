@@ -11,17 +11,15 @@ erDiagram
     CONFIG_ENTRY ||--o{ STATION : "subentry (admin)"
 
     ROUTINE ||--o{ TASK    : "embedded tasks[]"
-    ROUTINE }o--o{ PERSON  : "person_ids[]"
+    ROUTINE }o--|| PERSON  : "person_id"
     TASK    }o--o{ STATION : "stations[] empty = anywhere"
 
-    CARD }o--o| PERSON  : "person_id"
+    CARD }o--o| PERSON  : "person_id, status cards only"
     CARD }o--o| ROUTINE : "routine_id"
     CARD }o--o| TASK    : "task_id"
 
     ROUTINE     ||--o| DAY_ROUTINE : "one day state per routine"
-    DAY_ROUTINE ||--o{ DAY_PERSON  : "persons{person_id}"
-    DAY_PERSON  ||--o{ DAY_TASK    : "{task_id: completed_at}"
-    PERSON      ||--o{ DAY_PERSON  : ""
+    DAY_ROUTINE ||--o{ DAY_TASK    : "tasks{task_id: completed_at}"
     TASK        ||--o{ DAY_TASK    : ""
 
     PERSON {
@@ -43,7 +41,7 @@ erDiagram
         int sort_index
         str window_start "HH:MM, reset happens here"
         str window_end "HH:MM, may wrap past midnight"
-        list person_ids FK
+        str person_id FK
         list weekdays "empty = every day"
         list tasks
     }
@@ -58,16 +56,13 @@ erDiagram
     CARD {
         str uid PK "NFC UID"
         str kind "task | status"
-        str person_id FK "empty = active person"
+        str person_id FK "status cards only"
         str routine_id FK
         str task_id FK
     }
     DAY_ROUTINE {
         str routine_id PK
         str last_reset "ISO timestamp"
-    }
-    DAY_PERSON {
-        str person_id PK
     }
     DAY_TASK {
         str task_id PK
@@ -89,13 +84,14 @@ erDiagram
 A task is physically part of its routine. It has no store file of its own and no global namespace,
 so a task id is only meaningful together with its routine id.
 
-A card without a `person_id` belongs to whoever is active at the scan point, which is why that
-relation is optional. This is what makes both a shared set of cards and one set per child work
-without a second card kind.
+A routine belongs to exactly one person, so a task card needs no person of its own: the routine
+answers whose progress a scan changes. Only a status card carries a `person_id`, and it is the card
+that says who is standing at the scan point.
 
 The active person per scan point is runtime context held by the coordinator. It expires after a
 timeout and is never written to storage, so a restart leaves every scan point waiting for the next
-card.
+card. That context decides which of the person's routines the display shows when several windows
+overlap.
 
-Everyone assigned to a routine shares its task list and keeps their own progress. There is no
-per-person copy of a task; the split happens only in the day state.
+The day state is keyed by routine alone. A person with a morning and an evening routine therefore
+has two day states, and two children need two routines even when their task lists look the same.

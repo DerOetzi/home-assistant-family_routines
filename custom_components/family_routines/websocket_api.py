@@ -114,7 +114,7 @@ def ws_subscribe(
         vol.Required("name"): vol.All(str, vol.Length(min=1)),
         vol.Required("window_start"): _time,
         vol.Required("window_end"): _time,
-        vol.Optional("person_ids", default=[]): ID_LIST,
+        vol.Optional("person_id", default=""): str,
         vol.Optional("weekdays", default=[]): WEEKDAY_LIST,
     }
 )
@@ -124,7 +124,7 @@ async def ws_routine_add(hass: HomeAssistant, msg: dict) -> dict:
         msg["name"],
         window_start=msg["window_start"],
         window_end=msg["window_end"],
-        person_ids=msg["person_ids"],
+        person_id=msg["person_id"],
         weekdays=msg["weekdays"],
     )
     return {"routine_id": routine.id}
@@ -137,7 +137,7 @@ async def ws_routine_add(hass: HomeAssistant, msg: dict) -> dict:
         vol.Optional("name"): vol.All(str, vol.Length(min=1)),
         vol.Optional("window_start"): _time,
         vol.Optional("window_end"): _time,
-        vol.Optional("person_ids"): ID_LIST,
+        vol.Optional("person_id"): str,
         vol.Optional("weekdays"): WEEKDAY_LIST,
     }
 )
@@ -148,7 +148,7 @@ async def ws_routine_update(hass: HomeAssistant, msg: dict) -> None:
         name=msg.get("name"),
         window_start=msg.get("window_start"),
         window_end=msg.get("window_end"),
-        person_ids=msg.get("person_ids"),
+        person_id=msg.get("person_id"),
         weekdays=msg.get("weekdays"),
     )
 
@@ -297,14 +297,13 @@ async def ws_card_delete(hass: HomeAssistant, msg: dict) -> None:
         vol.Required("type"): "family_routines/complete",
         vol.Required("routine_id"): str,
         vol.Required("task_id"): str,
-        vol.Required("person_id"): str,
         vol.Required("completed"): bool,
     }
 )
 @_handler
 async def ws_complete(hass: HomeAssistant, msg: dict) -> None:
     await async_get_coordinator(hass).async_complete(
-        msg["routine_id"], msg["task_id"], msg["person_id"], msg["completed"]
+        msg["routine_id"], msg["task_id"], msg["completed"]
     )
 
 
@@ -312,11 +311,8 @@ async def ws_complete(hass: HomeAssistant, msg: dict) -> None:
     {
         vol.Required("type"): "family_routines/reset",
         vol.Required("routine_id"): str,
-        vol.Optional("person_id"): vol.Any(None, str),
     }
 )
 @_handler
 async def ws_reset(hass: HomeAssistant, msg: dict) -> None:
-    await async_get_coordinator(hass).async_reset(
-        msg["routine_id"], msg.get("person_id") or None
-    )
+    await async_get_coordinator(hass).async_reset(msg["routine_id"])

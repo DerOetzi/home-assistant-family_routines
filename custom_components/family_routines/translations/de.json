@@ -163,10 +163,6 @@
           "name": "Aufgabe",
           "description": "Die zu ändernde Aufgabe."
         },
-        "person_id": {
-          "name": "Person",
-          "description": "Wessen Fortschritt sich ändert."
-        },
         "completed": {
           "name": "Erledigt",
           "description": "Aus nimmt die Aufgabe zurück."
@@ -208,10 +204,6 @@
         "routine_id": {
           "name": "Routine",
           "description": "Leer lassen, um alle Routinen zurückzusetzen."
-        },
-        "person_id": {
-          "name": "Person",
-          "description": "Leer lassen, um alle Personen zurückzusetzen."
         }
       }
     },
@@ -231,13 +223,13 @@
           "name": "Fensterende",
           "description": "Nach dieser Uhrzeit wird die Routine nicht mehr gezeigt."
         },
-        "person_ids": {
-          "name": "Personen",
-          "description": "Liste der Personen, für die diese Routine gilt."
-        },
         "weekdays": {
           "name": "Wochentage",
           "description": "Leer lassen für jeden Tag. Bei einem Fenster über Mitternacht zählt der Tag, an dem es geöffnet hat."
+        },
+        "person_id": {
+          "name": "Person",
+          "description": "Die Person, zu der diese Routine gehört."
         }
       }
     },

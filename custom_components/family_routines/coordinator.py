@@ -12,6 +12,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CARD_KIND_STATUS,
+    CARD_KIND_TASK,
     CONF_COLOR,
     CONF_DEVICE_NAME,
     CONF_NAME,
@@ -72,9 +73,8 @@ class FamilyRoutinesCoordinator:
 
         routines_changed = False
         for routine in self.routines.routines:
-            missing = [p for p in routine.person_ids if p not in persons]
-            for person_id in missing:
-                routine.person_ids.remove(person_id)
+            if routine.person_id and routine.person_id not in persons:
+                routine.person_id = ""
                 routines_changed = True
             for task in routine.tasks:
                 stale = [s for s in task.stations if s not in stations]
@@ -83,6 +83,11 @@ class FamilyRoutinesCoordinator:
                     routines_changed = True
 
         cards_changed = False
+        for card in self.cards.cards:
+            if card.kind == CARD_KIND_TASK and card.person_id:
+                card.person_id = None
+                cards_changed = True
+
         for person_id in list(self.persons()):
             subentry = self.entry.subentries.get(person_id)
             if subentry is None:
@@ -189,18 +194,17 @@ class FamilyRoutinesCoordinator:
         )
 
     def view_for_station(self, station_id: str) -> tuple[str, dict]:
-        person_id = self.context_person_id(station_id)
-        if person_id is None:
+        if self.context_person_id(station_id) is None:
             return idle_view()
 
-        person = self.persons().get(person_id)
         stations = self.stations()
         station = stations.get(station_id)
-        if person is None or station is None:
+        routine = self.active_routine(station_id)
+        if station is None or routine is None:
             return idle_view()
 
-        routine = self.active_routine(station_id)
-        if routine is None:
+        person = self.persons().get(routine.person_id)
+        if person is None:
             return idle_view()
 
         return build_view(
@@ -208,7 +212,7 @@ class FamilyRoutinesCoordinator:
             person,
             station,
             stations,
-            self.day.completed(routine.id, person.id),
+            self.day.completed(routine.id),
             self.hass.config.language,
             window_weekday(dt_util.now(), routine.window_start),
         )
@@ -224,7 +228,7 @@ class FamilyRoutinesCoordinator:
             if not routine.runs_on(weekday):
                 continue
             tasks = routine.tasks_on(weekday)
-            completed = self.day.completed(routine.id, person_id)
+            completed = self.day.completed(routine.id)
             total += len(tasks)
             done += sum(1 for task in tasks if task.id in completed)
         return done, total
@@ -312,26 +316,25 @@ class FamilyRoutinesCoordinator:
         await self._async_apply_task_card(card, station)
 
     async def _async_apply_task_card(self, card: Card, station: StationRef) -> None:
-        person_id = card.person_id or self.context_person_id(station.id)
         routine = self.routines.get(card.routine_id or "")
         task = routine.get_task(card.task_id or "") if routine else None
-        if person_id is None or routine is None or task is None:
+        if routine is None or task is None or not routine.person_id:
             self._record_scan(station.id, SCAN_UNKNOWN)
             self.async_notify()
             return
 
         if not task.runs_at(station.id):
             self._record_scan(station.id, SCAN_WRONG_PLACE)
-            self.async_set_context(station.id, person_id)
+            self.async_set_context(station.id, routine.person_id)
             return
 
-        if self.day.set_done(routine.id, person_id, task.id):
+        if self.day.set_done(routine.id, task.id):
             await self.day.async_save()
             self._record_scan(station.id, SCAN_DONE)
         else:
             self._record_scan(station.id, SCAN_REPEAT)
 
-        self.async_set_context(station.id, person_id)
+        self.async_set_context(station.id, routine.person_id)
 
     def describe_card(self, card: Card) -> str:
         if card.kind == CARD_KIND_STATUS:
@@ -343,9 +346,6 @@ class FamilyRoutinesCoordinator:
             return card.task_id or "?"
         task = routine.get_task(card.task_id or "")
         label = task.label if task else card.task_id or "?"
-        person = self.persons().get(card.person_id or "")
-        if person is not None:
-            return f"{routine.name} / {label} ({person.name})"
         return f"{routine.name} / {label}"
 
     async def async_bind_card(
@@ -357,9 +357,7 @@ class FamilyRoutinesCoordinator:
         person_id: str | None = None,
     ) -> Card:
         if routine_id and task_id:
-            card = self.cards.add_task_card(
-                uid, routine_id=routine_id, task_id=task_id, person_id=person_id
-            )
+            card = self.cards.add_task_card(uid, routine_id=routine_id, task_id=task_id)
         else:
             card = self.cards.add_status_card(uid, person_id=person_id or "")
 
@@ -370,12 +368,12 @@ class FamilyRoutinesCoordinator:
         return card
 
     async def async_complete(
-        self, routine_id: str, task_id: str, person_id: str, completed: bool
+        self, routine_id: str, task_id: str, completed: bool
     ) -> None:
         if completed:
-            changed = self.day.set_done(routine_id, person_id, task_id)
+            changed = self.day.set_done(routine_id, task_id)
         else:
-            changed = self.day.clear_done(routine_id, person_id, task_id)
+            changed = self.day.clear_done(routine_id, task_id)
 
         if changed:
             await self.day.async_save()
@@ -407,14 +405,14 @@ class FamilyRoutinesCoordinator:
         *,
         window_start: str,
         window_end: str,
-        person_ids: list[str],
+        person_id: str,
         weekdays: list[str],
     ) -> Routine:
         routine = self.routines.add(
             name,
             window_start=window_start,
             window_end=window_end,
-            person_ids=person_ids,
+            person_id=person_id,
             weekdays=weekdays,
         )
         await self.routines.async_save()
@@ -474,7 +472,7 @@ class FamilyRoutinesCoordinator:
         name: str | None = None,
         window_start: str | None = None,
         window_end: str | None = None,
-        person_ids: list[str] | None = None,
+        person_id: str | None = None,
         weekdays: list[str] | None = None,
     ) -> Routine:
         routine = self.routines.update(
@@ -482,7 +480,7 @@ class FamilyRoutinesCoordinator:
             name=name,
             window_start=window_start,
             window_end=window_end,
-            person_ids=person_ids,
+            person_id=person_id,
             weekdays=weekdays,
         )
         if routine is None:
@@ -549,7 +547,11 @@ class FamilyRoutinesCoordinator:
         if person_id is not None and person_id not in self.persons():
             raise ServiceValidationError(f"unknown person: {person_id}")
 
-        binding = {"routine_id": routine_id, "task_id": task_id, "person_id": person_id}
+        binding = (
+            {"routine_id": routine_id, "task_id": task_id}
+            if routine_id and task_id
+            else {"person_id": person_id}
+        )
         if uid is None:
             self.pending_learn = binding
             self.async_notify()
@@ -597,7 +599,7 @@ class FamilyRoutinesCoordinator:
                     "window_start": routine.window_start,
                     "window_end": routine.window_end,
                     "weekdays": routine.weekdays,
-                    "person_ids": routine.person_ids,
+                    "person_id": routine.person_id,
                     "tasks": [
                         {
                             "id": task.id,
@@ -639,12 +641,13 @@ class FamilyRoutinesCoordinator:
                     "window_start": routine.window_start[:5],
                     "window_end": routine.window_end[:5],
                     "weekdays": routine.weekdays,
-                    "person_ids": routine.person_ids,
+                    "person_id": routine.person_id,
                     "tasks": [
                         {
                             "id": task.id,
                             "label": task.label,
                             "icon": task.icon,
+                            "glyph": character(task.icon),
                             "stations": task.stations,
                             "weekdays": task.weekdays,
                         }
@@ -653,10 +656,7 @@ class FamilyRoutinesCoordinator:
                     "active": open_now and routine.runs_on(weekday),
                     "weekday": weekday,
                     "today_task_ids": [task.id for task in today],
-                    "completed": {
-                        person_id: sorted(self.day.completed(routine.id, person_id))
-                        for person_id in routine.person_ids
-                    },
+                    "completed": sorted(self.day.completed(routine.id)),
                 }
             )
         return {
@@ -694,8 +694,8 @@ class FamilyRoutinesCoordinator:
             "pending_learn": self.pending_learn,
         }
 
-    async def async_reset(self, routine_id: str, person_id: str | None = None) -> None:
-        self.day.reset(routine_id, person_id)
+    async def async_reset(self, routine_id: str) -> None:
+        self.day.reset(routine_id)
         await self.day.async_save()
         self.async_notify()
 
