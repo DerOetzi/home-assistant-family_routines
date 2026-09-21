@@ -72,7 +72,8 @@ of it belongs to the framework's round format, see below.
 
 The framework decides between awake, standby, dark and antiburn, with the
 same entities as every other display: `Screen timeout`, `Show standby screen`,
-`Standby brightness` and `Antiburn`. Home Assistant schedules the two switches.
+`Standby brightness` and `Antiburn`. Antiburn runs from the firmware at night,
+Home Assistant schedules `Show standby screen`.
 
 `bind_display.yaml` adds what only a routine display needs:
 
