@@ -3,9 +3,10 @@ import { callWS, ensureSymbolFont } from "./shared.js";
 import "./views/today-view.js";
 import "./views/routines-view.js";
 import "./views/cards-view.js";
+import "./views/card-image.js";
 
 const DAILY_TABS = ["today"];
-const CONFIG_TABS = ["routines", "cards"];
+const CONFIG_TABS = ["routines", "cards", "designer"];
 const TABS = [...DAILY_TABS, ...CONFIG_TABS];
 const FIXED_ICONS = ["arrow_upward", "arrow_downward", "arrow_forward", "arrow_back", "celebration"];
 
@@ -161,6 +162,7 @@ class FamilyRoutinesPanel extends HTMLElement {
         <fr-today-view data-tab="today"></fr-today-view>
         <fr-routines-view data-tab="routines"></fr-routines-view>
         <fr-cards-view data-tab="cards"></fr-cards-view>
+        <fr-card-image data-tab="designer"></fr-card-image>
       </main>
       <div id="toast" hidden></div>
     `;
