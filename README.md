@@ -1,8 +1,13 @@
 # Family Routines
 
+[![Validate](https://github.com/DerOetzi/home-assistant-family_routines/actions/workflows/validate.yml/badge.svg)](https://github.com/DerOetzi/home-assistant-family_routines/actions/workflows/validate.yml)
+[![GitHub release](https://img.shields.io/github/v/release/DerOetzi/home-assistant-family_routines)](https://github.com/DerOetzi/home-assistant-family_routines/releases)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Home Assistant integration for step-by-step household routines with NFC picture cards and per-room scan points.
 
-> **Status: early development.** The routine logic, the services, the entities and the panel work.
+> **Status: early release.** In daily use at home. Services, storage and the panel may still change between minor versions.
 
 ## What it does
 
@@ -62,7 +67,16 @@ Any NFC reader that can call a service with a tag UID will do. The reference set
 
 ## Installation
 
-Not published to HACS yet. Add this repository as a custom repository of category *Integration*, or copy `custom_components/family_routines` into your Home Assistant configuration directory.
+### HACS (recommended)
+
+1. HACS → Integrations → ⋮ → Custom repositories
+2. Add `https://github.com/DerOetzi/home-assistant-family_routines`, category "Integration"
+3. Install "Family Routines" and restart Home Assistant
+
+### Manual
+
+1. Copy `custom_components/family_routines/` into your Home Assistant `custom_components/` folder
+2. Restart Home Assistant
 
 ## Licence
 
