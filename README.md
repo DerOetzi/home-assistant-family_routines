@@ -25,13 +25,13 @@ Routines and tasks can also be limited to certain weekdays. A routine set to Mon
 | --- | --- |
 | Person | Someone who takes part in routines, with their own colour and status card. |
 | Scan point | A place where cards are scanned. One is the normal case. |
-| Routine | A named, ordered list of tasks with a time window and the people it applies to. |
+| Routine | A named, ordered list of tasks with a time window, belonging to one person. |
 | Task | One step of a routine, with an icon, a word and an order. |
 | Card | An NFC tag. Either a task card or a person's status card. |
 
 People and scan points are sub-entries of the integration and therefore admin-only. Routines, tasks and cards live in storage and are edited in the panel, which needs no admin rights.
 
-Everyone assigned to a routine shares its task list and keeps their own progress. If someone needs a different list, give them their own routine.
+A routine belongs to exactly one person, who owns its progress. If two people follow the same steps, give each of them their own routine.
 
 Tasks carry a list of scan points. An empty list means the task can be checked off anywhere, which is what a single-scan-point household wants.
 
