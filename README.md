@@ -42,14 +42,13 @@ Icons travel by name. The integration keeps a catalogue mapping each name to its
 
 ## Panel
 
-The integration adds a *Routines* entry to the sidebar. It opens on *Today*; the gear in the toolbar switches to the configuration tabs *Routines* and *Cards* and back.
+The integration adds a *Routines* entry to the sidebar. It opens on *Today*; the gear in the toolbar switches to the configuration tabs *Routines* and *Designer* and back.
 
 | Tab | What it does |
 | --- | --- |
 | Today | Every routine with its person's tasks for today. Tap a task to check it off or undo it, or reset the routine. |
-| Routines | Create and edit routines and their tasks: name, time window, days, person, symbol, scan points, order. |
-| Cards | Learn a card by picking its task, or a person for a status card, then holding it to any scan point. Lists every card and the tasks still without one. |
-| Designer | Build the printable picture for a card: a photo in a polaroid frame in the person's colour, the symbol and the task in the wide bottom border. |
+| Routines | Create and edit routines and their tasks: name, time window, days, person, symbol, scan points, order. Each task shows how many cards it has. Its dialog links cards, either the one scanned last or the next unknown card held to any scan point; card changes take effect on save. Status cards are linked per person at the bottom of the page. |
+| Designer | Build the printable picture for a card: a photo in a polaroid frame in the person's colour, the symbol and the task in the wide bottom border. Drag and zoom the photo to pick the crop. |
 
 Symbols in the panel are drawn with Material Symbols loaded from Google Fonts, limited to the names in use, so they look exactly like the display and the printed cards.
 

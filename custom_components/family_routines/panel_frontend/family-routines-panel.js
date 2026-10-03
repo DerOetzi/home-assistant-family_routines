@@ -2,11 +2,11 @@ import { translator } from "./translations.js";
 import { callWS, ensureSymbolFont } from "./shared.js";
 import "./views/today-view.js";
 import "./views/routines-view.js";
-import "./views/cards-view.js";
 import "./views/card-image.js";
 
 const DAILY_TABS = ["today"];
-const CONFIG_TABS = ["routines", "cards", "designer"];
+const CONFIG_TABS = ["routines", "designer"];
+const TAB_ALIASES = { cards: "routines" };
 const TABS = [...DAILY_TABS, ...CONFIG_TABS];
 const FIXED_ICONS = ["arrow_upward", "arrow_downward", "arrow_forward", "arrow_back", "celebration"];
 
@@ -16,6 +16,7 @@ class FamilyRoutinesPanel extends HTMLElement {
     this._hass = null;
     this._narrow = false;
     this._state = null;
+    this._stateJson = "";
     this._tab = DAILY_TABS[0];
     this._routePrefix = "/family-routines";
     this._unsubscribe = null;
@@ -62,7 +63,8 @@ class FamilyRoutinesPanel extends HTMLElement {
     if (route?.prefix) {
       this._routePrefix = route.prefix;
     }
-    const tab = String(route?.path || "").split("/").filter(Boolean)[0];
+    const segment = String(route?.path || "").split("/").filter(Boolean)[0];
+    const tab = TAB_ALIASES[segment] || segment;
     if (tab && TABS.includes(tab) && tab !== this._tab) {
       this._tab = tab;
       this._render();
@@ -88,12 +90,19 @@ class FamilyRoutinesPanel extends HTMLElement {
     if (!this._hass) {
       return;
     }
+    let state;
     try {
-      this._state = await callWS(this._hass, "state");
+      state = await callWS(this._hass, "state");
     } catch (err) {
       this._showToast(translator(this._hass)("error", { message: err.message || err }));
       return;
     }
+    const json = JSON.stringify(state);
+    if (this._state && json === this._stateJson) {
+      return;
+    }
+    this._state = state;
+    this._stateJson = json;
     ensureSymbolFont([
       ...FIXED_ICONS,
       ...this._state.task_icons,
@@ -161,7 +170,6 @@ class FamilyRoutinesPanel extends HTMLElement {
         <div class="loading" id="loading"></div>
         <fr-today-view data-tab="today"></fr-today-view>
         <fr-routines-view data-tab="routines"></fr-routines-view>
-        <fr-cards-view data-tab="cards"></fr-cards-view>
         <fr-card-image data-tab="designer"></fr-card-image>
       </main>
       <div id="toast" hidden></div>

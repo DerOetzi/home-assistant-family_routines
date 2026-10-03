@@ -71,6 +71,7 @@ def async_setup(hass: HomeAssistant) -> None:
         ws_task_delete,
         ws_task_reorder,
         ws_card_learn,
+        ws_card_capture,
         ws_card_cancel_learn,
         ws_card_delete,
         ws_complete,
@@ -271,6 +272,14 @@ async def ws_card_learn(hass: HomeAssistant, msg: dict) -> dict:
         person_id=msg.get("person_id") or None,
     )
     return {"uid": card.uid if card else None, "pending": card is None}
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "family_routines/cards/capture"}
+)
+@_handler
+async def ws_card_capture(hass: HomeAssistant, msg: dict) -> dict:
+    return {"seq": async_get_coordinator(hass).async_start_capture()}
 
 
 @websocket_api.websocket_command(

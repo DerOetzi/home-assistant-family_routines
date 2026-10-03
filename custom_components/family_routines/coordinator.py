@@ -53,6 +53,9 @@ class FamilyRoutinesCoordinator:
         self.day = DayStore(hass)
         self.last_unknown_uid: str | None = None
         self.pending_learn: dict | None = None
+        self.capturing = False
+        self.last_capture: dict | None = None
+        self._capture_seq = 0
         self._context: dict[str, str] = {}
         self._context_timers: dict[str, Callable[[], None]] = {}
         self._reset_timers: list[Callable[[], None]] = []
@@ -290,6 +293,14 @@ class FamilyRoutinesCoordinator:
             EVENT_SCAN,
             {"uid": uid, "station": station.id, "known": card is not None},
         )
+
+        if card is None and self.capturing:
+            self.capturing = False
+            self._capture_seq += 1
+            self.last_capture = {"seq": self._capture_seq, "uid": uid}
+            self._record_scan(station.id, SCAN_LEARNED)
+            self.async_notify()
+            return
 
         if card is None and self.pending_learn is not None:
             pending = self.pending_learn
@@ -554,6 +565,7 @@ class FamilyRoutinesCoordinator:
         )
         if uid is None:
             self.pending_learn = binding
+            self.capturing = False
             self.async_notify()
             return None
 
@@ -566,8 +578,16 @@ class FamilyRoutinesCoordinator:
         return await self.async_bind_card(uid, **binding)
 
     @callback
+    def async_start_capture(self) -> int:
+        self.pending_learn = None
+        self.capturing = True
+        self.async_notify()
+        return self._capture_seq
+
+    @callback
     def async_cancel_learn(self) -> None:
         self.pending_learn = None
+        self.capturing = False
         self.async_notify()
 
     async def async_remove_card(self, uid: str) -> None:
@@ -692,6 +712,8 @@ class FamilyRoutinesCoordinator:
             "signpost_icons": sorted(SIGNPOST_ICONS),
             "last_unknown_uid": self.last_unknown_uid,
             "pending_learn": self.pending_learn,
+            "capturing": self.capturing,
+            "last_capture": self.last_capture,
         }
 
     async def async_reset(self, routine_id: str) -> None:

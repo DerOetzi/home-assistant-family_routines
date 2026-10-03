@@ -16,6 +16,18 @@ const NAME_FONT = '500 38px "Roboto", sans-serif';
 const QUESTION_FONT = '700 340px "Roboto", sans-serif';
 const GLYPH_FONT = `${GLYPH_SIZE}px "Material Symbols Outlined"`;
 const UMLAUTS = { ä: "ae", ö: "oe", ü: "ue", ß: "ss" };
+const INNER = {
+  x: BORDER,
+  y: BORDER,
+  width: SIZE - 2 * BORDER,
+  height: SIZE - BORDER - BAND,
+};
+const MAX_ZOOM = 6;
+const WHEEL_ZOOM = 0.0015;
+
+function clamp(value, min, max) {
+  return min > max ? (min + max) / 2 : Math.min(Math.max(value, min), max);
+}
 
 function roundedPath(ctx, x, y, width, height, radius) {
   const r = Math.min(radius, width / 2, height / 2);
@@ -83,10 +95,20 @@ class CardImageView extends HTMLElement {
     this._state = null;
     this._form = { kind: "task", routineId: "", taskId: "", personId: "" };
     this._bitmap = null;
+    this._crop = { zoom: 1, cx: 0, cy: 0 };
+    this._pointers = new Map();
+    this._paintFrame = 0;
     this._drawToken = 0;
     this.attachShadow({ mode: "open" });
-    this.shadowRoot.addEventListener("click", (event) => this._onClick(event));
-    this.shadowRoot.addEventListener("change", (event) => this._onChange(event));
+    const root = this.shadowRoot;
+    root.addEventListener("click", (event) => this._onClick(event));
+    root.addEventListener("change", (event) => this._onChange(event));
+    root.addEventListener("input", (event) => this._onInput(event));
+    root.addEventListener("pointerdown", (event) => this._onPointerDown(event));
+    root.addEventListener("pointermove", (event) => this._onPointerMove(event));
+    root.addEventListener("pointerup", (event) => this._onPointerUp(event));
+    root.addEventListener("pointercancel", (event) => this._onPointerUp(event));
+    root.addEventListener("wheel", (event) => this._onWheel(event), { passive: false });
   }
 
   set hass(hass) {
@@ -94,6 +116,9 @@ class CardImageView extends HTMLElement {
   }
 
   set state(state) {
+    if (state === this._state) {
+      return;
+    }
     this._state = state;
     this._normalizeForm();
     this._render();
@@ -210,9 +235,19 @@ class CardImageView extends HTMLElement {
         }
         ${status || routine?.tasks.length ? "" : `<p class="hint">${t("no_tasks")}</p>`}
         <div class="preview">
-          <canvas id="canvas" width="${SIZE}" height="${SIZE}"></canvas>
+          <canvas id="canvas" class="${!status && this._bitmap ? "croppable" : ""}" width="${SIZE}" height="${SIZE}"></canvas>
           ${status || this._bitmap ? "" : `<p class="empty">${t("no_photo")}</p>`}
         </div>
+        ${
+          !status && this._bitmap
+            ? `
+        <div class="field">
+          <label for="zoom">${t("zoom")}</label>
+          <input type="range" id="zoom" name="photo-zoom" min="1" max="${MAX_ZOOM}" step="0.01" value="${this._crop.zoom}">
+          <p class="hint">${t("crop_hint")}</p>
+        </div>`
+            : ""
+        }
         <div class="actions">
           ${
             status
@@ -232,10 +267,13 @@ class CardImageView extends HTMLElement {
         ${baseStyles}
         .preview { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         canvas {
-          width: 100%; max-width: 260px; height: auto;
+          width: 100%; max-width: 340px; height: auto;
           border-radius: 12px;
           background: var(--secondary-background-color, rgba(0,0,0,.03));
         }
+        canvas.croppable { cursor: grab; touch-action: none; }
+        canvas.croppable.dragging { cursor: grabbing; }
+        input[type="range"] { width: 100%; max-width: 340px; accent-color: var(--primary-color, #03a9f4); }
         .upload {
           font-size: 14px; padding: 8px 14px; border-radius: 18px;
           display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
@@ -256,7 +294,132 @@ class CardImageView extends HTMLElement {
         </section>
       </div>
     `;
+    this._pointers.clear();
     this._draw();
+  }
+
+  _cropView() {
+    const bitmap = this._bitmap;
+    const crop = this._crop;
+    const scale = Math.max(INNER.width / bitmap.width, INNER.height / bitmap.height) * crop.zoom;
+    const width = INNER.width / scale;
+    const height = INNER.height / scale;
+    return { scale, width, height, x: crop.cx - width / 2, y: crop.cy - height / 2 };
+  }
+
+  _clampCrop() {
+    const bitmap = this._bitmap;
+    const crop = this._crop;
+    crop.zoom = clamp(crop.zoom, 1, MAX_ZOOM);
+    const { width, height } = this._cropView();
+    crop.cx = clamp(crop.cx, width / 2, bitmap.width - width / 2);
+    crop.cy = clamp(crop.cy, height / 2, bitmap.height - height / 2);
+  }
+
+  _panBy(dx, dy) {
+    const { scale } = this._cropView();
+    this._crop.cx -= dx / scale;
+    this._crop.cy -= dy / scale;
+    this._clampCrop();
+  }
+
+  _zoomAt(zoom, px, py) {
+    const before = this._cropView();
+    const bx = before.x + (px - INNER.x) / before.scale;
+    const by = before.y + (py - INNER.y) / before.scale;
+    this._crop.zoom = clamp(zoom, 1, MAX_ZOOM);
+    const after = this._cropView();
+    this._crop.cx = bx - (px - INNER.x) / after.scale + after.width / 2;
+    this._crop.cy = by - (py - INNER.y) / after.scale + after.height / 2;
+    this._clampCrop();
+  }
+
+  _schedulePaint() {
+    if (this._paintFrame) {
+      return;
+    }
+    this._paintFrame = requestAnimationFrame(() => {
+      this._paintFrame = 0;
+      const slider = this.shadowRoot.getElementById("zoom");
+      if (slider) {
+        slider.value = String(this._crop.zoom);
+      }
+      this._draw();
+    });
+  }
+
+  _croppable(event) {
+    return Boolean(this._bitmap) && !this._status && event.target?.id === "canvas";
+  }
+
+  _canvasPoint(event) {
+    const rect = event.target.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) * SIZE) / rect.width,
+      y: ((event.clientY - rect.top) * SIZE) / rect.height,
+    };
+  }
+
+  _onPointerDown(event) {
+    if (!this._croppable(event) || (event.pointerType === "mouse" && event.button !== 0)) {
+      return;
+    }
+    event.preventDefault();
+    event.target.setPointerCapture?.(event.pointerId);
+    event.target.classList.add("dragging");
+    this._pointers.set(event.pointerId, this._canvasPoint(event));
+  }
+
+  _onPointerMove(event) {
+    const previous = this._pointers.get(event.pointerId);
+    if (!previous || !this._croppable(event)) {
+      return;
+    }
+    const point = this._canvasPoint(event);
+    const others = [...this._pointers].filter(([id]) => id !== event.pointerId).map(([, p]) => p);
+    this._pointers.set(event.pointerId, point);
+    if (others.length) {
+      const other = others[0];
+      const oldMid = { x: (previous.x + other.x) / 2, y: (previous.y + other.y) / 2 };
+      const newMid = { x: (point.x + other.x) / 2, y: (point.y + other.y) / 2 };
+      const oldDist = Math.hypot(previous.x - other.x, previous.y - other.y);
+      const newDist = Math.hypot(point.x - other.x, point.y - other.y);
+      this._panBy(newMid.x - oldMid.x, newMid.y - oldMid.y);
+      if (oldDist > 0 && newDist > 0) {
+        this._zoomAt((this._crop.zoom * newDist) / oldDist, newMid.x, newMid.y);
+      }
+    } else {
+      this._panBy(point.x - previous.x, point.y - previous.y);
+    }
+    this._schedulePaint();
+  }
+
+  _onPointerUp(event) {
+    if (!this._pointers.delete(event.pointerId)) {
+      return;
+    }
+    if (!this._pointers.size) {
+      event.target?.classList?.remove("dragging");
+    }
+  }
+
+  _onWheel(event) {
+    if (!this._croppable(event)) {
+      return;
+    }
+    event.preventDefault();
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? SIZE : 1);
+    const point = this._canvasPoint(event);
+    this._zoomAt(this._crop.zoom * Math.exp(-delta * WHEEL_ZOOM), point.x, point.y);
+    this._schedulePaint();
+  }
+
+  _onInput(event) {
+    if (event.target.name !== "photo-zoom" || !this._bitmap) {
+      return;
+    }
+    this._zoomAt(Number(event.target.value), INNER.x + INNER.width / 2, INNER.y + INNER.height / 2);
+    this._schedulePaint();
   }
 
   async _draw() {
@@ -281,12 +444,7 @@ class CardImageView extends HTMLElement {
     const color = person?.color || "#9e9e9e";
     const ink = readableInk(color);
     const ctx = canvas.getContext("2d");
-    const inner = {
-      x: BORDER,
-      y: BORDER,
-      width: SIZE - 2 * BORDER,
-      height: SIZE - BORDER - BAND,
-    };
+    const inner = INNER;
     const bandCenter = SIZE - BAND + BAND_CENTER;
 
     ctx.clearRect(0, 0, SIZE, SIZE);
@@ -314,16 +472,14 @@ class CardImageView extends HTMLElement {
     ctx.fillStyle = "#f4f4f4";
     ctx.fillRect(inner.x, inner.y, inner.width, inner.height);
     if (this._bitmap) {
-      const bitmap = this._bitmap;
-      const scale = Math.max(inner.width / bitmap.width, inner.height / bitmap.height);
-      const sourceWidth = inner.width / scale;
-      const sourceHeight = inner.height / scale;
+      const view = this._cropView();
+      ctx.imageSmoothingQuality = "high";
       ctx.drawImage(
-        bitmap,
-        (bitmap.width - sourceWidth) / 2,
-        (bitmap.height - sourceHeight) / 2,
-        sourceWidth,
-        sourceHeight,
+        this._bitmap,
+        view.x,
+        view.y,
+        view.width,
+        view.height,
         inner.x,
         inner.y,
         inner.width,
@@ -363,6 +519,7 @@ class CardImageView extends HTMLElement {
     }
     this._bitmap?.close?.();
     this._bitmap = bitmap;
+    this._crop = { zoom: 1, cx: bitmap.width / 2, cy: bitmap.height / 2 };
     this._render();
   }
 
