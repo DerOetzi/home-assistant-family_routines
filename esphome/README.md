@@ -44,13 +44,12 @@ The scan point's `device_name` in the integration must match the ESPHome
 | --- | --- |
 | `devicename` | ESPHome node name, doubles as the scan point identifier |
 | `routine_entity` | the scan point sensor, e.g. `sensor.flur_og_routine` |
-| `icons_xl` | icon font size, 110 on a 240 px round display |
 | `keepalive_interval` | how long one keepalive silences the next, 20s by default |
 | `home_page` | `routine_page`, the page the framework returns to |
 
 Fonts `roboto_md` and `roboto_lg` come from the display framework. The page
 brings its own icon font, `routine_icons`, with 45 Material Symbols glyphs
-at `icons_xl`. They are exactly the integration's icon catalogue; a symbol
+at `routine_icon_size`, 84 by default. They are exactly the integration's icon catalogue; a symbol
 added to one has to be added to the other.
 
 ## What arrives from the sensor
@@ -65,7 +64,11 @@ to be listed in the `routine_icons` font. The colour arrives as `#RRGGBB`
 and is parsed into the ring colour, so a person's colour lives in Home
 Assistant and nowhere else.
 
-`idle` hides symbol, word, name and dots and greys the ring. The clock on top
+Above the symbol sits a small clock, so a child can tell how much time is
+left before the next step. It reads `ha_time`, redraws with every render
+and every ten seconds, and stays empty until the time is valid.
+
+`idle` hides clock, symbol, word, name and dots and greys the ring. The clock on top
 of it belongs to the framework's round format, see below.
 
 ## Sleeping
