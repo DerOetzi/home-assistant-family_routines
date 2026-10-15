@@ -41,7 +41,7 @@ One sensor per scan point carries everything a display needs. Its state is `idle
 
 `dots` has one character per task in routine order: `x` done, `o` open here, `.` open somewhere else, `!` open at a point already passed on the way here. `glyphs` and `labels` are pipe-separated and follow the same order, so a display can browse the whole routine without asking Home Assistant again.
 
-`last_scan` tells the display what the most recent card at this scan point did, so it can answer with the right sound. It reads `<sequence>:<result>`, where the result is `done`, `repeat`, `person`, `wrong_place`, `learned` or `unknown`. The sequence grows with every scan, which lets a display tell a new scan from an update that merely repeats the old result.
+`last_scan` tells the display what the most recent card at this scan point did, so it can answer with the right sound. It reads `<sequence>:<result>`, where the result is `done`, `finished` (the card completed the routine), `repeat`, `person`, `wrong_place`, `learned` or `unknown`. The sequence grows with every scan, which lets a display tell a new scan from an update that merely repeats the old result.
 
 Icons travel by name. The integration keeps a catalogue mapping each name to its Material Symbols codepoint and hands the display a finished character, because a display font contains only the characters baked into it. The catalogue holds exactly the 45 glyphs of the reference firmware font: 40 task symbols in six groups, four signpost arrows and the finish symbol. Names outside the catalogue may be given as a raw hex codepoint.
 

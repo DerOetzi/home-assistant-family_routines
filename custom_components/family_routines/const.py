@@ -50,6 +50,7 @@ ATTR_TOTAL = "total"
 ATTR_LAST_SCAN = "last_scan"
 
 SCAN_DONE = "done"
+SCAN_FINISHED = "finished"
 SCAN_REPEAT = "repeat"
 SCAN_PERSON = "person"
 SCAN_WRONG_PLACE = "wrong_place"

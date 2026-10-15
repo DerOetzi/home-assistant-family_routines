@@ -127,10 +127,10 @@ text_sensor:
             return;
           }
 
-          if (result == "done" || result == "learned") {
-            if (id(rt_state) != "done") {
-              id(rt_tone_confirm).execute();
-            }
+          if (result == "finished") {
+            id(rt_done_sound).execute();
+          } else if (result == "done" || result == "learned") {
+            id(rt_tone_confirm).execute();
           } else if (result == "repeat" || result == "person") {
             id(rt_tone_neutral).execute();
           } else if (result == "wrong_place" || result == "unknown") {

@@ -3,6 +3,10 @@ substitutions:
   routine_icon_size: "84"
 
 globals:
+  - id: rt_done_at
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
   - id: rt_state
     type: std::string
     restore_value: false
@@ -308,11 +312,18 @@ script:
       - script.execute: rt_render
 
   - id: rt_done_sound
-    mode: restart
+    mode: single
     then:
-      - rtttl.stop:
-      - delay: 80ms
-      - rtttl.play: "geschafft:d=8,o=6,b=160:g,b,d7,4g7,e7,d7,b,4d7,16p,16d7,16e7,16f#7,2g7"
+      # A finishing scan arrives both as last_scan "finished" and as the
+      # state turning "done"; whichever comes second must not restart the tune.
+      - if:
+          condition:
+            lambda: "return id(rt_done_at) == 0 || millis() - id(rt_done_at) > 5000;"
+          then:
+            - lambda: "id(rt_done_at) = millis();"
+            - rtttl.stop:
+            - delay: 80ms
+            - rtttl.play: "geschafft:d=8,o=6,b=160:g,b,d7,4g7,e7,d7,b,4d7,16p,16d7,16e7,16f#7,2g7"
 
   - id: rt_touch
     parameters:

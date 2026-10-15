@@ -28,6 +28,7 @@ from .const import (
     GLOBAL_DATA_KEY,
     SIGNAL_ROUTINES_CHANGED,
     SCAN_DONE,
+    SCAN_FINISHED,
     SCAN_LEARNED,
     SCAN_PERSON,
     SCAN_REPEAT,
@@ -341,11 +342,19 @@ class FamilyRoutinesCoordinator:
 
         if self.day.set_done(routine.id, task.id):
             await self.day.async_save()
-            self._record_scan(station.id, SCAN_DONE)
+            self._record_scan(
+                station.id,
+                SCAN_FINISHED if self._is_finished(routine) else SCAN_DONE,
+            )
         else:
             self._record_scan(station.id, SCAN_REPEAT)
 
         self.async_set_context(station.id, routine.person_id)
+
+    def _is_finished(self, routine: Routine) -> bool:
+        tasks = routine.tasks_on(window_weekday(dt_util.now(), routine.window_start))
+        completed = self.day.completed(routine.id)
+        return bool(tasks) and all(task.id in completed for task in tasks)
 
     def describe_card(self, card: Card) -> str:
         if card.kind == CARD_KIND_STATUS:

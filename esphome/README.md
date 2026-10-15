@@ -93,14 +93,19 @@ The state is checked every 500 ms, so the package needs no hook in the
 Home Assistant binding.
 
 `done` plays the finish tune, but only on the way in, not on every update
-that leaves the routine finished.
+that leaves the routine finished. That covers routines ticked off in the
+panel; a finishing card is announced through `last_scan` instead, because
+the state stays `done` when a second person finishes at the same scan point
+while the first one is still shown. The tune never plays twice within five
+seconds.
 
 `last_scan` picks the short sound after a card is read. The reader itself
 stays silent, because only Home Assistant knows what the card did.
 
 | Result | Sound |
 | --- | --- |
-| `done`, `learned` | rising two-note confirmation, skipped when the routine just finished |
+| `finished` | finish tune |
+| `done`, `learned` | rising two-note confirmation |
 | `repeat`, `person` | one neutral note |
 | `wrong_place`, `unknown` | falling two-note error |
 
